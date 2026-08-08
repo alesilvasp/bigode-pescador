@@ -69,6 +69,8 @@ caber no `localStorage`. Clicar na miniatura no histórico abre o lightbox.
 
 ## Roadmap
 
+> Passos detalhados e prontos para o Claude Code executar estão em [`BACKLOG.md`](BACKLOG.md).
+
 - [ ] Deploy na **Vercel** (projeto estático, sem config — só apontar o repo).
 - [ ] Transformar em **PWA**: adicionar `manifest.webmanifest` (nome, ícones,
       `theme_color`, `display: standalone`) e um `service-worker.js` para cache
