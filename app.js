@@ -1,5 +1,5 @@
 // =========================================================================
-//  Campeonato de Pesca — lógica do app
+//  Bigode Pescador — lógica do app
 //  Vanilla JS, sem build. Dados persistidos em localStorage.
 // =========================================================================
 
@@ -24,8 +24,8 @@ const PEIXES_PADRAO = [
 const OPCAO_NOVO = "__novo__"; // valor especial no select de peixe
 
 // Chaves do localStorage.
-const CHAVE_PESCAS = "campeonato-pesca:pescas";
-const CHAVE_PEIXES_EXTRA = "campeonato-pesca:peixes-extra";
+const CHAVE_PESCAS = "bigode-pescador:pescas";
+const CHAVE_PEIXES_EXTRA = "bigode-pescador:peixes-extra";
 
 // ---- Estado --------------------------------------------------------------
 

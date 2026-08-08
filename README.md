@@ -1,4 +1,4 @@
-# 🎣 Campeonato de Pesca
+# 🎣 Bigode Pescador
 
 App simples para registrar as pescas de um campeonato entre amigos e ver a
 classificação atualizar em tempo real. Sem instalação, sem servidor — é só abrir.

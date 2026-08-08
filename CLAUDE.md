@@ -1,4 +1,4 @@
-# Campeonato de Pesca
+# Bigode Pescador
 
 App web para registrar pescas durante um campeonato entre amigos e acompanhar a
 classificação em tempo real. Feito em **HTML + CSS + JavaScript puro (vanilla)**,
@@ -46,8 +46,8 @@ Lista fixa em `PESCADORES` (topo do `app.js`). Para mudar os nomes, edite esse a
 
 ### Persistência
 Tudo em `localStorage`, sem backend:
-- `campeonato-pesca:pescas` — lista de pescas registradas.
-- `campeonato-pesca:peixes-extra` — peixes cadastrados pelo usuário.
+- `bigode-pescador:pescas` — lista de pescas registradas.
+- `bigode-pescador:peixes-extra` — peixes cadastrados pelo usuário.
 
 Cada pesca guarda `fator` e `pontuacao` como snapshot, então mudar o fator de um
 peixe depois **não** altera as pescas já registradas.
