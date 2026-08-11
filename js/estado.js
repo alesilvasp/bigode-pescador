@@ -103,13 +103,19 @@ export async function carregar() {
   notificar("carga");
 }
 
+// Carimbo dos registros semeados. Precisa ser BEM antigo: assim, qualquer edição
+// real (feita por alguém, com data atual) vence o padrão no last-write-wins. Se
+// fosse `agora`, um aparelho que semeia depois "ganharia" de uma remoção que veio
+// do servidor com data anterior — e o registro apagado ressuscitaria.
+const CARIMBO_SEED = "1970-01-01T00:00:00.000Z";
+
 /** Semeia os peixes padrão na primeira execução, sem sobrescrever edições. */
 async function garantirPeixesPadrao() {
   const existentes = await db.listar(db.STORES.peixes);
   if (existentes.length) return;
   await db.putVarios(
     db.STORES.peixes,
-    PEIXES_PADRAO.map((p) => ({ ...p, padrao: true, atualizadaEm: new Date().toISOString() }))
+    PEIXES_PADRAO.map((p) => ({ ...p, padrao: true, atualizadaEm: CARIMBO_SEED }))
   );
 }
 
@@ -122,10 +128,9 @@ async function garantirPescadores() {
   const existentes = await db.listar(db.STORES.pescadores);
   if (existentes.length) return;
   const nomes = lerLocal(CHAVES.pescadores, [...PESCADORES_PADRAO]);
-  const agora = new Date().toISOString();
   await db.putVarios(
     db.STORES.pescadores,
-    nomes.map((nome) => ({ nome, removido: false, atualizadaEm: agora }))
+    nomes.map((nome) => ({ nome, removido: false, atualizadaEm: CARIMBO_SEED }))
   );
 }
 
