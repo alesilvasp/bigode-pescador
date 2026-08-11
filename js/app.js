@@ -1,0 +1,114 @@
+// =========================================================================
+//  Bigode Pescador — ponto de entrada.
+//
+//  Ordem importa: carrega os dados locais, monta a tela, e só então liga a
+//  sincronização. O app precisa estar utilizável antes de qualquer rede.
+// =========================================================================
+
+import { aoMudar, carregar, estado } from "./estado.js";
+import * as sync from "./sync.js";
+import * as pwa from "./pwa.js";
+import { aplicarConviteDaUrl, iniciarAjustes, renderizarAjustes } from "./ajustes.js";
+import {
+  abrirBemVindo,
+  abrirModalPesca,
+  iniciarBemVindo,
+  iniciarEventosGlobais,
+  iniciarModalEtapa,
+  iniciarModalPeixe,
+  iniciarModalPesca,
+} from "./modais.js";
+import {
+  $,
+  iniciarAbas,
+  preencherSelectPescadores,
+  preencherSelectPeixes,
+  renderizarCabecalho,
+  renderizarGeral,
+  renderizarHistorico,
+  renderizarRanking,
+  toast,
+  trocarAba,
+} from "./ui.js";
+
+async function iniciar() {
+  try {
+    await carregar();
+  } catch (e) {
+    console.error("[app] falhou ao carregar os dados:", e);
+    toast("Não consegui abrir os dados guardados neste aparelho.", "erro");
+  }
+
+  // ---- Interface
+  iniciarAbas();
+  iniciarModalPesca();
+  iniciarModalEtapa();
+  iniciarModalPeixe();
+  iniciarBemVindo();
+  iniciarEventosGlobais();
+  iniciarAjustes();
+  pwa.iniciarInstalacao();
+
+  $("#filtro-pescador").addEventListener("change", renderizarHistorico);
+  $("#btn-atualizar-app").addEventListener("click", pwa.buscarAtualizacao);
+
+  preencherSelectPescadores();
+  preencherSelectPeixes();
+  renderizarTelas();
+  renderizarAjustes();
+
+  // ---- Reage a qualquer mudança de estado
+  aoMudar((motivo) => {
+    if (motivo === "pescadores" || motivo === "eu") preencherSelectPescadores();
+    if (motivo === "peixes") preencherSelectPeixes();
+    renderizarTelas();
+    renderizarAjustes();
+  });
+
+  // ---- PWA e sincronização
+  pwa.registrarServiceWorker();
+
+  // Link de convite tem prioridade: pode ser a primeira vez deste aparelho.
+  aplicarConviteDaUrl();
+  sync.iniciar();
+
+  // Clicar no link de convite com o app JÁ ABERTO só troca o fragmento da
+  // URL — o navegador não recarrega nada e o convite passaria batido. É o
+  // caso comum: o link chega no grupo e a pessoa está com o app na tela.
+  window.addEventListener("hashchange", () => {
+    if (aplicarConviteDaUrl()) sync.iniciar();
+  });
+
+  // ---- Primeira abertura: pergunta quem está usando
+  if (!estado.eu) {
+    abrirBemVindo();
+  }
+
+  // ---- Atalho do ícone do app
+  const acao = pwa.lerAcaoDaUrl();
+  if (acao === "nova") {
+    // Espera a tela assentar para o modal não abrir antes do render.
+    setTimeout(() => abrirModalPesca(), 120);
+  } else if (acao === "ranking") {
+    trocarAba("campeonato");
+  }
+
+  console.info("[app] Bigode Pescador pronto 🎣");
+}
+
+function renderizarTelas() {
+  renderizarCabecalho();
+  renderizarRanking();
+  renderizarHistorico();
+  renderizarGeral();
+}
+
+// Erros não tratados não podem deixar a tela em branco sem explicação.
+window.addEventListener("error", (e) => {
+  console.error("[app] erro não tratado:", e.error || e.message);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("[app] promessa rejeitada:", e.reason);
+});
+
+iniciar();

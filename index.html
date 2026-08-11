@@ -2,89 +2,292 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b2a3a" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
   <title>Bigode Pescador 🎣</title>
+  <meta name="description" content="Campeonato de pesca entre amigos: registre cada peixe e acompanhe a classificação em tempo real." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0b2a3a" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- iOS: o Safari ignora boa parte do manifest, então precisa disto -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bigode" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
+
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topo">
-    <div class="topo-conteudo">
+
+<!-- ===================== Cabeçalho ===================== -->
+<header class="topo">
+  <div class="topo-conteudo">
+    <div class="topo-linha">
       <h1>🎣 Bigode Pescador</h1>
-      <p class="subtitulo">Registre cada pesca e acompanhe a classificação em tempo real.</p>
+      <button id="btn-sync" class="chip-sync" title="Situação da sincronização" aria-live="polite">
+        <span class="ponto-sync" aria-hidden="true"></span>
+        <span id="texto-sync">local</span>
+      </button>
     </div>
-  </header>
+    <button id="seletor-etapa" class="seletor-etapa" aria-haspopup="dialog">
+      <span class="etapa-rotulo">Etapa</span>
+      <span id="etapa-nome" class="etapa-nome">—</span>
+      <span class="etapa-seta" aria-hidden="true">▾</span>
+    </button>
+  </div>
+</header>
 
-  <!-- Abas -->
-  <nav class="abas" role="tablist">
-    <button class="aba ativa" data-aba="campeonato" role="tab">🏆 Campeonato</button>
-    <button class="aba" data-aba="historico" role="tab">📜 Histórico</button>
-  </nav>
+<!-- ===================== Abas ===================== -->
+<nav class="abas" role="tablist" aria-label="Seções do app">
+  <button class="aba ativa" data-aba="campeonato" role="tab" aria-selected="true">🏆<span>Etapa</span></button>
+  <button class="aba" data-aba="historico" role="tab" aria-selected="false">📜<span>Histórico</span></button>
+  <button class="aba" data-aba="geral" role="tab" aria-selected="false">📊<span>Geral</span></button>
+  <button class="aba" data-aba="ajustes" role="tab" aria-selected="false">⚙️<span>Ajustes</span></button>
+</nav>
 
-  <main class="conteudo">
-    <!-- Aba: Campeonato -->
-    <section id="aba-campeonato" class="painel-aba">
-      <div class="tabela-wrapper">
-        <table class="tabela">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Pescador</th>
-              <th>Pescas</th>
-              <th>Maior (cm)</th>
-              <th>Peso total</th>
-              <th>Pontos</th>
-            </tr>
-          </thead>
-          <tbody id="ranking-corpo"></tbody>
-        </table>
+<main class="conteudo">
+
+  <!-- ===================== Aba: Campeonato ===================== -->
+  <section id="aba-campeonato" class="painel-aba" role="tabpanel">
+    <div id="destaque-lider" class="destaque oculto"></div>
+
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Pescador</th>
+            <th scope="col" class="numero">Pescas</th>
+            <th scope="col" class="numero">Maior</th>
+            <th scope="col" class="numero">Peso</th>
+            <th scope="col" class="numero">Pontos</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-corpo"></tbody>
+      </table>
+    </div>
+
+    <div class="acoes-etapa">
+      <button id="btn-compartilhar" class="btn btn-secundario btn-pequeno">📤 Compartilhar placar</button>
+    </div>
+  </section>
+
+  <!-- ===================== Aba: Histórico ===================== -->
+  <section id="aba-historico" class="painel-aba oculto" role="tabpanel">
+    <div class="historico-cabecalho">
+      <select id="filtro-pescador" class="filtro" aria-label="Filtrar por pescador">
+        <option value="">Todos os pescadores</option>
+      </select>
+      <span id="contador-pescas" class="badge">0 pescas</span>
+    </div>
+    <div id="historico-lista" class="historico-lista"></div>
+    <p id="vazio-historico" class="vazio">Nenhuma pesca registrada nesta etapa. Toque no <strong>+</strong> para começar.</p>
+  </section>
+
+  <!-- ===================== Aba: Geral ===================== -->
+  <section id="aba-geral" class="painel-aba oculto" role="tabpanel">
+    <h2 class="titulo-secao">Classificação geral</h2>
+    <p class="ajuda">Soma de todas as etapas.</p>
+
+    <div class="tabela-wrapper">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Pescador</th>
+            <th scope="col" class="numero">Etapas</th>
+            <th scope="col" class="numero">Pescas</th>
+            <th scope="col" class="numero">Pontos</th>
+          </tr>
+        </thead>
+        <tbody id="geral-corpo"></tbody>
+      </table>
+    </div>
+
+    <h2 class="titulo-secao">Etapas</h2>
+    <div id="lista-etapas" class="lista-etapas"></div>
+    <button id="btn-nova-etapa" class="btn btn-secundario btn-largo">➕ Nova etapa</button>
+
+    <h2 class="titulo-secao">Recordes</h2>
+    <div id="recordes" class="recordes"></div>
+  </section>
+
+  <!-- ===================== Aba: Ajustes ===================== -->
+  <section id="aba-ajustes" class="painel-aba oculto" role="tabpanel">
+
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Quem está usando</h2>
+      <p class="ajuda">Pré-seleciona seu nome ao registrar uma pesca.</p>
+      <select id="ajuste-eu" class="filtro"></select>
+    </div>
+
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Pescadores</h2>
+      <div id="lista-pescadores" class="lista-simples"></div>
+      <div class="linha-adicionar">
+        <input id="novo-pescador" type="text" placeholder="Nome do pescador" />
+        <button id="btn-add-pescador" class="btn btn-secundario btn-pequeno">Adicionar</button>
       </div>
-    </section>
+    </div>
 
-    <!-- Aba: Histórico -->
-    <section id="aba-historico" class="painel-aba oculto">
-      <div class="historico-cabecalho">
-        <span id="contador-pescas" class="badge">0 pescas</span>
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Peixes e fatores</h2>
+      <p class="ajuda">
+        A regra do Rodrigo: <code>fator × peso(g) + fator × tamanho(cm)</code>.
+        Peixes de <strong>pontuação fixa</strong> valem sempre o mesmo, independente do tamanho.
+      </p>
+      <div id="lista-peixes" class="lista-peixes"></div>
+      <button id="btn-novo-peixe" class="btn btn-secundario btn-largo">➕ Cadastrar peixe</button>
+    </div>
+
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Calibragem da fórmula</h2>
+      <p class="ajuda">
+        Mexer aqui <strong>recalcula todas as pescas já registradas</strong>.
+        Combine com o grupo antes.
+      </p>
+
+      <label class="campo-inline">
+        <span>Multiplicador do peso</span>
+        <input id="ajuste-mult-peso" type="number" step="0.001" min="0" />
+      </label>
+      <label class="campo-inline">
+        <span>Multiplicador do tamanho</span>
+        <input id="ajuste-mult-tamanho" type="number" step="0.001" min="0" />
+      </label>
+
+      <div class="simulador">
+        <strong>Simulação</strong> — Robalo (fator 5), 100 g, 45 cm:
+        <span id="simulacao-resultado" class="destaque-numero">725</span>
+        <p class="ajuda" id="simulacao-conta"></p>
       </div>
-      <div id="historico-lista" class="historico-lista"></div>
-      <p id="vazio-historico" class="vazio">Nenhuma pesca registrada. Toque no botão + para começar.</p>
-    </section>
-  </main>
 
-  <!-- Botão flutuante para adicionar pesca -->
-  <button id="btn-adicionar" class="fab" aria-label="Adicionar pesca">+</button>
+      <div class="linha-botoes">
+        <button id="btn-salvar-formula" class="btn btn-primario btn-pequeno">Salvar e recalcular</button>
+        <button id="btn-restaurar-formula" class="btn btn-secundario btn-pequeno">Restaurar regra original</button>
+      </div>
+    </div>
 
-  <!-- Modal de nova pesca -->
-  <div id="modal" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
-    <div class="modal-caixa">
-      <h2 id="modal-titulo">Nova pesca</h2>
-      <form id="form-pesca">
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Sincronização</h2>
+      <p class="ajuda">
+        Sem isto, cada celular guarda só as próprias pescas. Configurando, os quatro
+        veem o mesmo placar. O passo a passo está em <code>supabase/schema.sql</code>.
+      </p>
+
+      <label class="campo-inline coluna">
+        <span>URL do projeto</span>
+        <input id="sync-url" type="url" placeholder="https://xxxxx.supabase.co" autocomplete="off" />
+      </label>
+      <label class="campo-inline coluna">
+        <span>Chave anon / public</span>
+        <input id="sync-key" type="password" placeholder="eyJhbGciOi..." autocomplete="off" />
+      </label>
+
+      <div class="linha-botoes">
+        <button id="btn-testar-sync" class="btn btn-secundario btn-pequeno">Testar</button>
+        <button id="btn-salvar-sync" class="btn btn-primario btn-pequeno">Salvar</button>
+        <button id="btn-remover-sync" class="btn btn-secundario btn-pequeno">Desligar</button>
+      </div>
+      <p id="status-sync" class="status-linha"></p>
+
+      <div id="bloco-convite" class="bloco-convite oculto">
+        <p class="ajuda">Manda este link no grupo — quem abrir já entra sincronizado, sem digitar nada:</p>
+        <button id="btn-convite" class="btn btn-secundario btn-largo">🔗 Copiar link de acesso</button>
+      </div>
+    </div>
+
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Exportar e importar</h2>
+      <p class="ajuda">Baixa os dados para guardar ou mandar para alguém.</p>
+
+      <label class="campo-inline">
+        <span>O que exportar</span>
+        <select id="escopo-export" class="filtro">
+          <option value="etapa">Só a etapa atual</option>
+          <option value="tudo" selected>Campeonato inteiro</option>
+        </select>
+      </label>
+      <label class="checkbox">
+        <input id="export-fotos" type="checkbox" />
+        <span>Incluir fotos (arquivo fica bem maior)</span>
+      </label>
+
+      <div class="linha-botoes">
+        <button id="btn-export-json" class="btn btn-secundario btn-pequeno">📄 JSON</button>
+        <button id="btn-export-xml" class="btn btn-secundario btn-pequeno">📑 XML</button>
+        <button id="btn-export-csv" class="btn btn-secundario btn-pequeno">📊 CSV</button>
+      </div>
+
+      <div class="linha-botoes">
+        <button id="btn-importar" class="btn btn-secundario btn-pequeno">📥 Importar JSON</button>
+        <input id="arquivo-import" type="file" accept="application/json,.json" hidden />
+      </div>
+      <p id="status-import" class="status-linha"></p>
+    </div>
+
+    <div class="grupo-ajuste">
+      <h2 class="titulo-secao">Sobre</h2>
+      <p class="ajuda" id="info-sobre"></p>
+      <div class="linha-botoes">
+        <button id="btn-instalar" class="btn btn-primario btn-pequeno oculto">📲 Instalar app</button>
+        <button id="btn-atualizar-app" class="btn btn-secundario btn-pequeno">🔄 Buscar atualização</button>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- Botão flutuante -->
+<button id="btn-adicionar" class="fab" aria-label="Registrar uma pesca">+</button>
+
+<!-- ===================== Modal: nova/editar pesca ===================== -->
+<div id="modal-pesca" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-pesca">
+  <div class="modal-caixa">
+    <h2 id="titulo-modal-pesca">Nova pesca</h2>
+    <form id="form-pesca">
+      <label>
+        Pescador
+        <select id="campo-pescador" required></select>
+      </label>
+
+      <label>
+        Peixe
+        <select id="campo-tipo" required></select>
+      </label>
+
+      <div id="bloco-novo-peixe" class="bloco-novo oculto">
         <label>
-          Pescador
-          <select id="campo-pescador" required></select>
+          Nome do novo peixe
+          <input id="campo-novo-nome" type="text" placeholder="Ex.: Dourado" />
         </label>
-
         <label>
-          Peixe
-          <select id="campo-tipo" required></select>
+          Como pontua
+          <select id="campo-novo-modo">
+            <option value="formula">Pela fórmula (fator × peso + fator × tamanho)</option>
+            <option value="fixa">Pontuação fixa</option>
+          </select>
         </label>
+        <label id="rotulo-novo-fator">
+          Fator
+          <input id="campo-novo-fator" type="number" step="0.1" placeholder="Ex.: 4" />
+        </label>
+        <label id="rotulo-novo-fixos" class="oculto">
+          Pontos fixos
+          <input id="campo-novo-fixos" type="number" step="1" placeholder="Ex.: 120" />
+        </label>
+      </div>
 
-        <!-- Aparece só quando "Cadastrar novo peixe" é escolhido -->
-        <div id="bloco-novo-peixe" class="bloco-novo oculto">
-          <label>
-            Nome do novo peixe
-            <input id="campo-novo-nome" type="text" placeholder="Ex.: Tucunaré" />
-          </label>
-          <label>
-            Fator de pontuação
-            <input id="campo-novo-fator" type="number" step="0.1" placeholder="Ex.: 4" />
-          </label>
-        </div>
-
+      <div id="bloco-medidas">
         <label>
           Peso
           <span class="campo-com-unidade">
-            <input id="campo-peso" type="number" min="0" step="0.01" required />
+            <input id="campo-peso" type="number" min="0" step="0.01" inputmode="decimal" />
             <span class="toggle-unidade" role="group" aria-label="Unidade de peso">
               <button type="button" class="un ativa" data-un="kg">kg</button>
               <button type="button" class="un" data-un="g">g</button>
@@ -93,32 +296,124 @@
         </label>
 
         <label class="campo-slider">
-          <span class="slider-topo">Tamanho <strong id="valor-tamanho">30 cm</strong></span>
+          <span class="slider-topo">Tamanho <strong id="valor-tamanho">30,0 cm</strong></span>
           <input id="campo-tamanho" type="range" min="0" max="100" step="0.5" value="30" />
+          <span class="slider-escala" aria-hidden="true"><i>0</i><i>25</i><i>50</i><i>75</i><i>100</i></span>
         </label>
+      </div>
 
-        <label class="campo-foto">
-          Foto <span class="opcional">(opcional)</span>
-          <input id="campo-foto" type="file" accept="image/*" capture="environment" />
-          <div id="foto-preview" class="foto-preview oculto">
-            <img id="foto-preview-img" alt="Prévia da foto" />
-            <button type="button" id="btn-remover-foto" class="btn-remover-foto">remover foto</button>
-          </div>
-        </label>
-
-        <p class="preview">Pontuação estimada: <strong id="preview-pontuacao">0</strong></p>
-
-        <div class="modal-acoes">
-          <button type="button" id="btn-cancelar" class="btn btn-secundario">Cancelar</button>
-          <button type="submit" class="btn btn-primario">Salvar pesca</button>
+      <label class="campo-foto">
+        Foto <span class="opcional">(opcional)</span>
+        <input id="campo-foto" type="file" accept="image/*" capture="environment" />
+        <div id="foto-preview" class="foto-preview oculto">
+          <img id="foto-preview-img" alt="Prévia da foto do peixe" />
+          <button type="button" id="btn-remover-foto" class="btn-remover-foto">remover</button>
         </div>
-      </form>
+      </label>
+
+      <p class="preview">
+        Pontuação: <strong id="preview-pontuacao">0</strong>
+        <span id="preview-conta" class="preview-conta"></span>
+      </p>
+
+      <div class="modal-acoes">
+        <button type="button" id="btn-cancelar" class="btn btn-secundario">Cancelar</button>
+        <button type="submit" class="btn btn-primario">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== Modal: etapa ===================== -->
+<div id="modal-etapa" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-etapa">
+  <div class="modal-caixa">
+    <h2 id="titulo-modal-etapa">Nova etapa</h2>
+    <form id="form-etapa">
+      <label>
+        Nome
+        <input id="campo-etapa-nome" type="text" placeholder="Ex.: Pescaria em Ilhabela" required />
+      </label>
+      <label>
+        Local <span class="opcional">(opcional)</span>
+        <input id="campo-etapa-local" type="text" placeholder="Ex.: Represa de Guarapiranga" />
+      </label>
+      <label>
+        Data
+        <input id="campo-etapa-data" type="date" required />
+      </label>
+      <label class="checkbox">
+        <input id="campo-etapa-encerrada" type="checkbox" />
+        <span>Etapa encerrada</span>
+      </label>
+      <div class="modal-acoes">
+        <button type="button" id="btn-etapa-cancelar" class="btn btn-secundario">Cancelar</button>
+        <button type="submit" class="btn btn-primario">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== Modal: escolher etapa ===================== -->
+<div id="modal-escolher-etapa" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-escolher-etapa">
+  <div class="modal-caixa">
+    <h2 id="titulo-escolher-etapa">Escolher etapa</h2>
+    <div id="opcoes-etapa" class="opcoes-etapa"></div>
+    <div class="modal-acoes">
+      <button type="button" id="btn-escolher-cancelar" class="btn btn-secundario">Fechar</button>
+      <button type="button" id="btn-escolher-nova" class="btn btn-primario">➕ Nova etapa</button>
     </div>
   </div>
+</div>
 
-  <!-- Lightbox de foto -->
-  <div id="lightbox" class="lightbox oculto"><img id="lightbox-img" alt="Foto da pesca" /></div>
+<!-- ===================== Modal: peixe ===================== -->
+<div id="modal-peixe" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-peixe">
+  <div class="modal-caixa">
+    <h2 id="titulo-modal-peixe">Peixe</h2>
+    <form id="form-peixe">
+      <label>
+        Nome
+        <input id="campo-peixe-nome" type="text" required />
+      </label>
+      <label>
+        Como pontua
+        <select id="campo-peixe-modo">
+          <option value="formula">Pela fórmula</option>
+          <option value="fixa">Pontuação fixa</option>
+        </select>
+      </label>
+      <label id="rotulo-peixe-fator">
+        Fator
+        <input id="campo-peixe-fator" type="number" step="0.1" />
+      </label>
+      <label id="rotulo-peixe-fixos" class="oculto">
+        Pontos fixos
+        <input id="campo-peixe-fixos" type="number" step="1" />
+      </label>
+      <div class="modal-acoes">
+        <button type="button" id="btn-peixe-cancelar" class="btn btn-secundario">Cancelar</button>
+        <button type="submit" class="btn btn-primario">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-  <script src="app.js"></script>
+<!-- ===================== Modal: boas-vindas ===================== -->
+<div id="modal-bemvindo" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-bemvindo">
+  <div class="modal-caixa">
+    <h2 id="titulo-bemvindo">🎣 Quem é você?</h2>
+    <p class="ajuda">Só para já deixar seu nome selecionado quando registrar um peixe.</p>
+    <div id="opcoes-eu" class="opcoes-etapa"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox oculto" role="dialog" aria-label="Foto ampliada">
+  <img id="lightbox-img" alt="Foto da pesca" />
+</div>
+
+<!-- Avisos -->
+<div id="toast" class="toast oculto" role="status" aria-live="polite"></div>
+
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -1,80 +1,123 @@
 # Bigode Pescador
 
-App web para registrar pescas durante um campeonato entre amigos e acompanhar a
-classificação em tempo real. Feito em **HTML + CSS + JavaScript puro (vanilla)**,
-sem build e sem dependências — basta abrir no navegador.
+App web do campeonato de pesca entre amigos. **HTML + CSS + JavaScript puro**,
+com módulos ES nativos — sem build, sem bundler, sem dependência em produção.
 
 ## Como rodar
 
-Como é estático, qualquer uma das opções funciona:
+```bash
+npm run dev     # http://localhost:5000
+npm test        # testes da regra de pontuação (node --test)
+```
 
-- Abrir o `index.html` direto no navegador (duplo clique).
-- Ou servir localmente (recomendado, evita restrições de câmera/arquivo em alguns navegadores):
-  ```bash
-  npx serve .
-  # ou
-  python -m http.server 8000
-  ```
-
-Não há passo de build, lint ou testes por enquanto.
+> ⚠️ **Não abra o `index.html` por duplo clique.** Módulos ES e service worker
+> exigem `http://` ou `https://`. Em `file://` o app não sobe.
 
 ## Estrutura
 
 ```
-index.html    # marcação: abas, tabela de ranking, histórico, modal e FAB
-styles.css    # tema escuro (variáveis CSS em :root), layout responsivo
-app.js        # todo o estado, pontuação, persistência e eventos
+index.html    telas, modais, cabeçalho do PWA
+styles.css    tema escuro; variáveis em :root; safe areas de iOS
+js/           lógica, em módulos ES
+supabase/     schema.sql do banco
+tests/        testes da pontuação
 ```
 
-## Como funciona
+### Os módulos
 
-### Pescadores
-Lista fixa em `PESCADORES` (topo do `app.js`). Para mudar os nomes, edite esse array.
+| Arquivo | Responsabilidade |
+|---|---|
+| `app.js` | ponto de entrada; ordem de boot |
+| `config.js` | peixes padrão, pescadores, chaves do storage |
+| `pontuacao.js` | **a regra do campeonato** e o ranking |
+| `db.js` | IndexedDB: pescas, etapas, peixes, fotos, fila de sync |
+| `estado.js` | modelo em memória + operações; única porta de escrita |
+| `ui.js` | renderização das telas |
+| `modais.js` | formulários (pesca, etapa, peixe, boas-vindas) |
+| `ajustes.js` | tela de ajustes, export/import, convite |
+| `sync.js` | sincronização com o Supabase |
+| `pwa.js` | service worker, instalação, atalhos |
 
-### Peixes e pontuação
-- Peixes padrão ficam em `PEIXES_PADRAO` (`nome` + `fator`).
-- O usuário pode cadastrar um peixe novo pelo próprio app (opção
-  "➕ Cadastrar novo peixe…" no select). Esses ficam salvos em `peixesExtra`.
-- **Fórmula (em `calcularPontuacao`)**:
-  ```
-  pontuação = fator × peso(gramas) + fator × tamanho(cm)
-  ```
-- O peso é sempre armazenado em **gramas**. O formulário aceita entrada em
-  **kg ou g** (toggle) e converte (1 kg = 1000 g) antes de calcular.
-- Fatores atuais: Robalo 5, Caranha 5, Traíra 5, Corvina 4, Pescada 4, Bagre 3,
-  Peixe Galo 10 (troféu), Baiacu -0,5 (penalidade — pontua negativo).
+**Fluxo de escrita:** a UI nunca toca no banco. Tudo passa por `estado.js`, que
+grava no IndexedDB, enfileira para sync e avisa a interface pelo `aoMudar()`.
 
-### Persistência
-Tudo em `localStorage`, sem backend:
-- `bigode-pescador:pescas` — lista de pescas registradas.
-- `bigode-pescador:peixes-extra` — peixes cadastrados pelo usuário.
+## Regras do domínio
 
-Cada pesca guarda `fator` e `pontuacao` como snapshot, então mudar o fator de um
-peixe depois **não** altera as pescas já registradas.
+### Pontuação — definida pelo Rodrigo no grupo, não pelo código
 
-### Fotos
-Opcionais. A imagem escolhida (galeria ou câmera via `capture="environment"`) é
-redimensionada num `<canvas>` e salva como dataURL JPEG (`comprimirImagem`) para
-caber no `localStorage`. Clicar na miniatura no histórico abre o lightbox.
+```
+pontuação = fator × peso(gramas) + fator × tamanho(cm)
+```
 
-> ⚠️ `localStorage` tem ~5 MB. Com muitas fotos isso pode encher. Migrar para
-> **IndexedDB** é o próximo passo natural quando o volume crescer.
+Caso âncora, que está em `tests/pontuacao.test.js`:
+**Robalo (fator 5), 100 g, 45 cm = 725 pontos.** Se esse teste quebrar, a regra
+do campeonato mudou — confirme com o Rodrigo antes de ajustar o teste.
 
-## Convenções de código
+**Cada fator tem fonte registrada em comentário no `config.js`** — a fala do
+Rodrigo ou do Alex que o originou. Não altere sem falar com o Rodrigo; ele é a
+autoridade sobre pontuação. A **Corvina** é a única sem confirmação dele (ver
+`BACKLOG.md`).
 
-- Vanilla JS, sem framework. Nomes e comentários em **português**.
-- CSS com variáveis de tema em `:root`; evitar cores hardcoded.
-- Manter `app.js` organizado por seções (config, estado, pontuação,
-  persistência, render, eventos) — seguir o padrão já existente.
+Dois modos de peixe:
+- `formula` — a conta acima.
+- `fixa` — vale `pontosFixos`, ignorando peso e tamanho. Ao escolher um desses,
+  os campos de peso e tamanho somem do formulário. **Nenhum peixe padrão usa
+  este modo**; ele existe para o grupo cadastrar um assim pela tela de Ajustes.
 
-## Roadmap
+Os multiplicadores em `ajustes` existem só para calibragem pela interface. Ambos
+em `1` = regra original intacta.
 
-> Passos detalhados e prontos para o Claude Code executar estão em [`BACKLOG.md`](BACKLOG.md).
+> ⚠️ Mudar fator ou multiplicador **recalcula todas as pescas já registradas**.
+> É intencional: campeonato inteiro sob a mesma régua. Difere da v1, que
+> congelava a pontuação no momento do registro.
 
-- [ ] Deploy na **Vercel** (projeto estático, sem config — só apontar o repo).
-- [ ] Transformar em **PWA**: adicionar `manifest.webmanifest` (nome, ícones,
-      `theme_color`, `display: standalone`) e um `service-worker.js` para cache
-      offline; registrar o SW no `index.html`. Requer HTTPS (a Vercel já entrega).
-- [ ] Editar pesca já registrada (hoje só dá pra remover).
-- [ ] Exportar/compartilhar resultados do campeonato.
-- [ ] Migrar fotos para IndexedDB.
+### Modelo de dados
+
+- **Etapa** — uma pescaria. Tem ranking próprio; a aba Geral soma todas.
+- **Pesca** — pertence a uma etapa. Guarda `fator` e `modo` como snapshot.
+- **Peixe** — a chave é o `nome`.
+- Exclusão é **soft delete** (`removida: true`), para a exclusão se propagar
+  no sync. Nada é apagado de verdade.
+
+### Sincronização
+
+Offline-first: grava local, enfileira no `outbox`, sobe quando há rede. Conflito
+resolve por `atualizadaEm` (quem escreveu por último vence). Polling a cada 20 s
+com o app em primeiro plano — **não** WebSocket, de propósito: reconexão de
+WebSocket em rede móvel ruim é fonte de dor.
+
+O `outbox` só recebe itens se houver Supabase configurado; quem liga depois usa
+`sync.reenviarTudo()`, que a tela de Ajustes chama ao salvar as credenciais.
+
+**As fotos não sobem.** Ficam no aparelho de quem tirou — economiza cota e não
+faz falta para o ranking. Por isso `aplicarRemoto()` preserva o `fotoId` local
+quando o registro volta do servidor.
+
+## Convenções
+
+- Nomes, comentários e mensagens em **português**.
+- **Todo dado do usuário passa por `esc()` antes de ir para `innerHTML`.** Nome
+  de peixe e de pescador são digitados à mão; há teste cobrindo isso.
+- CSS com variáveis em `:root`, sem cor hardcoded.
+- Fonte de 16px nos inputs — abaixo disso o iOS dá zoom sozinho ao focar.
+- Ao mexer nos arquivos do app, **suba `VERSAO` no `service-worker.js`** e a
+  lista `ARQUIVOS` se criar arquivo novo. É o que faz a atualização chegar nos
+  celulares.
+
+## Armadilhas já resolvidas (não reintroduzir)
+
+1. **`navigationPreload` desligado.** Com ele, o Chrome derruba a navegação
+   quando a rede cai e o app não abre offline.
+2. **Navegação é cache-first**, não network-first: com sinal fraco, network-first
+   deixaria o app numa tela branca até o fetch estourar.
+3. **`controllerchange` só recarrega se já havia controller.** Na primeira
+   visita o `clients.claim()` também dispara o evento, e o app piscava à toa.
+4. **Convite também escuta `hashchange`.** Clicar no link com o app já aberto só
+   troca o fragmento; sem isso, o convite passava batido.
+5. **A migração da v1 cria uma etapa aberta.** A etapa importada nasce encerrada;
+   sem a nova, o app abriria sem lugar para registrar.
+
+## Estado do roadmap
+
+Feito: Vercel-ready, PWA completo, etapas, edição, IndexedDB, export JSON/XML/CSV,
+tela de ajustes, sincronização. O que sobrou está em [`BACKLOG.md`](BACKLOG.md).

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Bigode Pescador">
+  <defs>
+    <radialGradient id="fundo" cx="40%" cy="32%" r="72%">
+      <stop offset="0" stop-color="#1b6f92"/>
+      <stop offset="1" stop-color="#0b2a3a"/>
+    </radialGradient>
+    <linearGradient id="corpo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe282"/>
+      <stop offset="0.55" stop-color="#f4c542"/>
+      <stop offset="1" stop-color="#c08c1e"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="32" cy="32" r="32" fill="url(#fundo)"/>
+
+  <!-- cauda -->
+  <path d="M25 32 L9 20 L14 32 L9 44 Z" fill="#dcae3c"/>
+  <!-- nadadeiras -->
+  <path d="M27 25 L42 25 L33 15 Z" fill="#e0b23e"/>
+  <path d="M29 39 L40 39 L34 47 Z" fill="#c9992e"/>
+  <!-- corpo -->
+  <ellipse cx="35" cy="32" rx="18" ry="11.5" fill="url(#corpo)"/>
+  <!-- guelra -->
+  <path d="M42 25.5 L42 38.5" stroke="#b4841c" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- olho -->
+  <circle cx="46.5" cy="29" r="2.1" fill="#061c27"/>
+  <circle cx="47.1" cy="28.4" r="0.8" fill="#fff"/>
+
+  <!-- anzol -->
+  <path d="M51 8 L51 19 A4.2 4.2 0 0 1 43.5 21.5" fill="none" stroke="#d6e6ee"
+        stroke-width="2" stroke-linecap="round"/>
+
+  <!-- bolhas -->
+  <circle cx="55.5" cy="24" r="1.7" fill="#37c0d8"/>
+  <circle cx="58.5" cy="19" r="1.1" fill="#5fd2e6"/>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "bigode-pescador",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Campeonato de pesca entre amigos — PWA offline-first, sem build.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes serve . -l 5000",
+    "test": "node --test tests/"
+  },
+  "keywords": ["pwa", "pesca", "campeonato"],
+  "license": "MIT"
+}

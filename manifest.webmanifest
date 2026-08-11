@@ -1,0 +1,59 @@
+{
+  "name": "Bigode Pescador",
+  "short_name": "Bigode",
+  "description": "Campeonato de pesca entre amigos: registre cada peixe e acompanhe a classificação em tempo real.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0b2a3a",
+  "theme_color": "#0b2a3a",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["sports", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrar peixe",
+      "short_name": "Novo peixe",
+      "description": "Abre direto o formulário para registrar uma pesca",
+      "url": "./?acao=nova",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Ver classificação",
+      "short_name": "Placar",
+      "description": "Abre o ranking da etapa atual",
+      "url": "./?acao=ranking",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
