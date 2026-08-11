@@ -1,9 +1,23 @@
 # 🎣 Bigode Pescador
 
+### 👉 **[bigode-pescador.vercel.app](https://bigode-pescador.vercel.app)**
+
 App do campeonato de pesca da turma. Registre cada peixe, veja a classificação
 atualizar na hora e instale no celular como aplicativo.
 
 Funciona **offline** — na beira do rio o sinal cai, e o app não pode cair junto.
+
+## Instalar no celular
+
+**Android (Chrome):** abra o link, toque no menu **⋮** → *Instalar app*. Ou aceite
+o aviso que aparece sozinho.
+
+**iPhone (precisa ser pelo Safari):** abra o link, toque em **Compartilhar** (o
+quadrado com a seta), role e toque em *Adicionar à Tela de Início*. No Chrome do
+iPhone a opção não existe — é limitação da Apple.
+
+Depois de instalado, **segure o ícone** do app: aparece o atalho *Registrar peixe*,
+que abre direto no formulário. É o caminho mais rápido durante a pescaria.
 
 ## O que dá pra fazer
 
@@ -35,7 +49,7 @@ Exemplo dele: Robalo (fator 5) de 100 g e 45 cm → `5×100 + 5×45` = **725 pon
 | Robalo | 5 | Rodrigo: *"fator de relevância do peixe (robalo - 5 / bagre - 2)"* |
 | Caranha, Pescada | 5 | Rodrigo: *"mesmo peso de caranha e pescada e robalo"* |
 | Traíra | 5 | Alex: *"Traíra? 5?"* → Rodrigo: *"sim sim"* |
-| Corvina | 4 | ⚠️ ainda sem confirmação do Rodrigo |
+| Corvina | 4 | Alex, 11/08 — único que não veio do Rodrigo |
 | Bagre | 2 | Rodrigo: *"robalo - 5 / bagre - 2"* |
 | Baiacu ⚠️ | −0,5 | Rodrigo: *"a coloca baiacu menos 0,5"* |
 
@@ -50,18 +64,34 @@ peso e tamanho).
 
 ## Sincronizar entre os celulares
 
-Sem configurar, cada aparelho guarda só as próprias pescas. Para todos verem o
-mesmo placar:
+O banco do grupo **já está no ar** (Supabase, provisionado pelo Alex em 11/08).
+
+**Para entrar nele:** peça o **link de acesso** no grupo — quem já está
+sincronizado gera em *Ajustes → Sincronização → Copiar link de acesso*. Abrir o
+link é tudo: o app se configura sozinho, sem digitar nada.
+
+Sem isso, o app funciona normalmente, só que cada aparelho guarda as próprias
+pescas e o chip no topo mostra **"só neste aparelho"**.
+
+O que sincroniza: **etapas, pescas, peixes e a lista de pescadores**. As **fotos
+não sobem** — ficam no aparelho de quem tirou, para não estourar a cota do plano
+gratuito.
+
+<details>
+<summary>Montar um banco do zero (só se for começar outro campeonato)</summary>
 
 1. Crie um projeto gratuito em [supabase.com](https://supabase.com).
-2. Em **SQL Editor**, cole o arquivo [`supabase/schema.sql`](supabase/schema.sql)
-   inteiro e clique em *Run*.
+2. Em **SQL Editor**, cole o [`supabase/schema.sql`](supabase/schema.sql) inteiro
+   e clique em *Run*.
 3. Em **Project Settings → API**, copie a *Project URL* e a chave *anon/public*.
 4. No app: **Ajustes → Sincronização**, cole as duas e salve.
-5. Toque em **Copiar link de acesso** e mande no grupo — quem abrir o link já
-   entra sincronizado, sem digitar nada.
+5. Toque em **Copiar link de acesso** e mande no grupo.
 
-As fotos não sobem: ficam no aparelho de quem tirou.
+> O `schema.sql` é idempotente — rodar de novo não apaga nada. **Rode outra vez
+> sempre que o arquivo mudar**, senão as tabelas novas não existem no banco e o
+> sync dá 404.
+
+</details>
 
 ## Rodando localmente
 

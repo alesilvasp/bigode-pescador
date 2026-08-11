@@ -144,6 +144,10 @@ quando o registro volta do servidor.
 Feito: Vercel-ready, PWA completo, etapas, edição, IndexedDB, export JSON/XML/CSV,
 tela de ajustes, sincronização.
 
-**Sincronização ligada em produção (06/08):** projeto Supabase criado, `schema.sql`
-aplicado e sync validado ponta a ponta na URL da Vercel. Detalhes e o que sobrou
-estão em [`BACKLOG.md`](BACKLOG.md).
+**No ar desde 11/08/2026:** https://bigode-pescador.vercel.app — Vercel com
+auto-deploy, Supabase provisionado e sync validado ponta a ponta em produção.
+Detalhes e o que sobrou estão em [`BACKLOG.md`](BACKLOG.md).
+
+> A Vercel e o Supabase estão na conta do **Alex**. A Vercel exige ser *dono* do
+> repositório para importar um projeto — colaborador não consegue, e isso não é
+> limitação de plano.
