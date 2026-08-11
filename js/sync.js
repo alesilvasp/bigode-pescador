@@ -98,41 +98,46 @@ export async function testarConexao() {
 //
 // O banco usa snake_case (convenção do Postgres) e o app camelCase.
 
+// Coalesce para não mandar undefined em coluna NOT NULL: o JSON.stringify
+// descartaria o campo e o Postgres receberia NULL (erro 23502). Cada valor cai
+// no mesmo default declarado no schema.sql.
+const agora = () => new Date().toISOString();
+
 const PARA_BANCO = {
   etapa: (e) => ({
     id: e.id,
     nome: e.nome,
-    local: e.local,
+    local: e.local ?? "",
     data: e.data,
-    encerrada: e.encerrada,
-    removida: e.removida,
-    criada_em: e.criadaEm,
-    atualizada_em: e.atualizadaEm,
+    encerrada: !!e.encerrada,
+    removida: !!e.removida,
+    criada_em: e.criadaEm ?? agora(),
+    atualizada_em: e.atualizadaEm ?? agora(),
   }),
   pesca: (p) => ({
     id: p.id,
     etapa_id: p.etapaId,
     pescador: p.pescador,
     tipo: p.tipo,
-    fator: p.fator,
-    modo: p.modo,
-    peso_gramas: p.pesoGramas,
-    tamanho: p.tamanho,
-    pontuacao: p.pontuacao,
-    data: p.data,
-    removida: p.removida,
-    criada_em: p.criadaEm,
-    atualizada_em: p.atualizadaEm,
+    fator: p.fator ?? 0,
+    modo: p.modo ?? "formula",
+    peso_gramas: p.pesoGramas ?? 0,
+    tamanho: p.tamanho ?? 0,
+    pontuacao: p.pontuacao ?? 0,
+    data: p.data ?? agora(),
+    removida: !!p.removida,
+    criada_em: p.criadaEm ?? agora(),
+    atualizada_em: p.atualizadaEm ?? agora(),
   }),
   peixe: (p) => ({
     nome: p.nome,
-    fator: p.fator,
-    modo: p.modo,
-    pontos_fixos: p.pontosFixos,
-    trofeu: p.trofeu,
-    penalidade: p.penalidade,
-    removido: p.removido,
-    atualizada_em: p.atualizadaEm,
+    fator: p.fator ?? 0,
+    modo: p.modo ?? "formula",
+    pontos_fixos: p.pontosFixos ?? 0,
+    trofeu: !!p.trofeu,
+    penalidade: !!p.penalidade,
+    removido: !!p.removido,
+    atualizada_em: p.atualizadaEm ?? agora(),
   }),
 };
 
