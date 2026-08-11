@@ -82,7 +82,10 @@ async function chamar(caminho, opcoes = {}) {
     throw new Error(`Supabase ${resp.status}: ${corpo.slice(0, 200)}`);
   }
 
-  return resp.status === 204 ? null : resp.json();
+  // Respostas sem corpo (ex.: POST com Prefer: return=minimal devolve 201 vazio,
+  // ou um 204) não têm JSON para ler. Só faz o parse se veio conteúdo.
+  const texto = await resp.text();
+  return texto ? JSON.parse(texto) : null;
 }
 
 /** Testa as credenciais sem gravar nada. */
