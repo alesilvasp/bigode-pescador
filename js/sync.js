@@ -205,7 +205,14 @@ async function subirPendentes() {
 
     const corpo = [...ultimaVersao.values()].map((i) => PARA_BANCO[entidade](i.dados));
 
-    await chamar(`${tabela}?on_conflict=${chave}`, {
+    // O PostgREST exige que todos os objetos de um insert em lote tenham as
+    // MESMAS chaves; como o JSON.stringify descarta campos undefined, linhas
+    // diferentes podem sair com conjuntos de chaves distintos (erro PGRST102).
+    // Declarar ?columns=... fixa as colunas e usa o default do banco nas que
+    // faltarem, em vez de recusar o lote.
+    const colunas = [...new Set(corpo.flatMap((o) => Object.keys(o)))].join(",");
+
+    await chamar(`${tabela}?on_conflict=${chave}&columns=${encodeURIComponent(colunas)}`, {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
       body: JSON.stringify(corpo),
