@@ -133,6 +133,11 @@ quando o registro volta do servidor.
    linhas com chaves diferentes davam **PGRST102**. Além do `?columns=`, os
    mapeadores em `PARA_BANCO` coalescem cada campo no default do schema, senão
    uma coluna `NOT NULL` (ex.: `pontos_fixos`) recebe NULL e dá **23502**.
+8. **O script de teste passa o DIRETÓRIO, nunca um glob.** `node --test tests/*.test.js`
+   funciona no Linux e no Node 22+, mas quebra no Windows: o npm roda os scripts
+   pelo `cmd.exe`, que não expande glob, e o Node 20 não interpreta o padrão
+   sozinho. Pior, ele **sai com código 0** — o teste não roda e ninguém percebe.
+   `node --test tests/` funciona em todo SO e versão, e sai 1 quando falha.
 
 ## Estado do roadmap
 
