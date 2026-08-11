@@ -19,10 +19,18 @@
 
 import { CHAVES } from "./config.js";
 import * as db from "./db.js";
-import { aplicarRemoto, atualizarContagemPendentes, estado, notificar } from "./estado.js";
+import {
+  aplicarRemoto,
+  atualizarContagemPendentes,
+  emLote,
+  estado,
+  notificar,
+} from "./estado.js";
 
 const INTERVALO_POLLING = 20_000;
 const CHAVE_ULTIMO_SYNC = "bigode-pescador:ultimo-sync";
+const INICIO_DOS_TEMPOS = "1970-01-01T00:00:00Z";
+const TAMANHO_PAGINA = 500;
 
 let timerPolling = null;
 let promessaSync = null; // sincronização em andamento — novas chamadas aguardam esta
@@ -193,6 +201,20 @@ const DO_BANCO = {
 
 const TABELA = { etapa: "etapas", pesca: "pescas", peixe: "peixes", pescador: "pescadores" };
 
+/**
+ * Até onde a próxima sincronização deve pedir: o maior `atualizada_em` que
+ * realmente chegou, ou o valor anterior se não veio nada.
+ *
+ * Existe separado para poder ser testado — é a regra que impede o relógio do
+ * celular de matar o sync. Ver `tests/sync.test.js`.
+ */
+export function carimboMaisRecente(anterior, registros) {
+  return (registros || []).reduce(
+    (maior, r) => (r?.atualizada_em > maior ? r.atualizada_em : maior),
+    anterior
+  );
+}
+
 // ---- Subida (outbox → servidor) -------------------------------------------
 
 async function subirPendentes() {
@@ -243,23 +265,51 @@ async function subirPendentes() {
 
 // ---- Descida (servidor → local) -------------------------------------------
 
+/**
+ * Baixa o que mudou desde o último sync.
+ *
+ * Devolve `{ recebidos, ateOnde }`, onde `ateOnde` é o MAIOR `atualizada_em`
+ * que realmente chegou. Quem chama grava esse valor como marca d'água — nunca
+ * o relógio local. Ver o comentário em `executarSincronizacao`.
+ *
+ * Pagina até a tabela acabar. Sem isso, um lote grande (o primeiro sync, ou um
+ * `reenviarTudo`) passaria do limite e o resto sumiria: a marca d'água avançaria
+ * por cima dos registros não lidos e ninguém mais pediria por eles.
+ *
+ * A paginação é por `offset` com o filtro de data FIXO, e não "continua do
+ * último carimbo": um insert em lote grava todas as linhas com o mesmo
+ * `now()` (é o tempo da transação, não da linha), então avançar pelo carimbo
+ * pediria a mesma página para sempre num lote que não coubesse de uma vez.
+ */
 async function baixarMudancas() {
-  const desde = localStorage.getItem(CHAVE_ULTIMO_SYNC) || "1970-01-01T00:00:00Z";
+  const desde = localStorage.getItem(CHAVE_ULTIMO_SYNC) || INICIO_DOS_TEMPOS;
   let recebidos = 0;
+  let ateOnde = desde;
 
   for (const entidade of ["etapa", "peixe", "pescador", "pesca"]) {
     const tabela = TABELA[entidade];
-    const registros = await chamar(
-      `${tabela}?select=*&atualizada_em=gt.${encodeURIComponent(desde)}&order=atualizada_em.asc&limit=1000`
-    );
+    const chave = entidade === "peixe" || entidade === "pescador" ? "nome" : "id";
+    let offset = 0;
 
-    for (const r of registros || []) {
-      await aplicarRemoto(entidade, DO_BANCO[entidade](r));
-      recebidos++;
+    for (;;) {
+      const registros = await chamar(
+        `${tabela}?select=*&atualizada_em=gt.${encodeURIComponent(desde)}` +
+          `&order=atualizada_em.asc,${chave}.asc&limit=${TAMANHO_PAGINA}&offset=${offset}`
+      );
+      if (!registros?.length) break;
+
+      for (const r of registros) {
+        await aplicarRemoto(entidade, DO_BANCO[entidade](r));
+        recebidos++;
+      }
+      ateOnde = carimboMaisRecente(ateOnde, registros);
+
+      offset += registros.length;
+      if (registros.length < TAMANHO_PAGINA) break;
     }
   }
 
-  return recebidos;
+  return { recebidos, ateOnde };
 }
 
 // ---- Ciclo de sincronização -----------------------------------------------
@@ -284,15 +334,23 @@ async function executarSincronizacao({ silencioso }) {
   situacao.sincronizando = true;
   if (!silencioso) notificar("sync");
 
-  // Marca o instante ANTES de baixar, para não perder escritas concorrentes.
-  const carimbo = new Date().toISOString();
-
   try {
     const enviados = await subirPendentes();
-    const recebidos = await baixarMudancas();
+    // Um redesenho no fim, não um por registro baixado.
+    const { recebidos, ateOnde } = await emLote(baixarMudancas);
 
-    localStorage.setItem(CHAVE_ULTIMO_SYNC, carimbo);
-    situacao.ultimoSync = carimbo;
+    // A marca d'água vem do DADO, nunca de `new Date()` daqui.
+    //
+    // Usar o relógio local matava o sync em silêncio: basta o celular estar
+    // alguns minutos adiantado para ele gravar uma marca no futuro e passar a
+    // pedir "o que mudou depois disso". Tudo que os outros registrassem nesse
+    // intervalo tinha carimbo do servidor (menor) e NUNCA mais era pedido —
+    // some para sempre, sem erro nenhum na tela. Relógio de celular erra, e
+    // esse é o tipo de bug que só aparece na beira do rio.
+    //
+    // Comparando carimbo de servidor com carimbo de servidor, o desvio some.
+    localStorage.setItem(CHAVE_ULTIMO_SYNC, ateOnde);
+    situacao.ultimoSync = new Date().toISOString(); // só para exibir "última vez"
     situacao.ultimoErro = null;
     await atualizarContagemPendentes();
 

@@ -2,15 +2,20 @@
 //  Service worker — o que faz o app abrir sem internet.
 //
 //  Estratégia por tipo de pedido:
-//    • Navegação (abrir o app)  → rede primeiro, cai no cache se falhar
+//    • Navegação (abrir o app)  → cache primeiro, atualiza por baixo
 //    • Arquivos do app (js/css) → cache primeiro, atualiza por baixo
 //    • Supabase e outros hosts  → nunca passa por aqui
+//
+//  Navegação é cache-first de propósito, não rede-first: na beira do rio o
+//  sinal costuma existir e não prestar, e rede-first deixaria o app numa tela
+//  branca até o fetch estourar. A versão nova chega pelo aviso do próprio
+//  service worker. Ver o comentário no handler de `fetch`.
 //
 //  Ao mexer nos arquivos do app, suba o número da versão abaixo. É isso que
 //  faz o celular de cada um pegar a versão nova.
 // =========================================================================
 
-const VERSAO = "v2.0.7";
+const VERSAO = "v2.1.0";
 const CACHE = `bigode-pescador-${VERSAO}`;
 
 // Tudo que o app precisa para abrir offline.

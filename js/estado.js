@@ -33,19 +33,56 @@ export const estado = {
 
 const ouvintes = new Set();
 
+let profundidadeLote = 0;
+let motivosPendentes = new Set();
+
+/** Assina as mudanças. O callback recebe um **Set** de motivos. */
 export function aoMudar(fn) {
   ouvintes.add(fn);
   return () => ouvintes.delete(fn);
 }
 
 export function notificar(motivo = "geral") {
+  if (profundidadeLote > 0) {
+    motivosPendentes.add(motivo);
+    return;
+  }
+  emitir(new Set([motivo]));
+}
+
+function emitir(motivos) {
   ouvintes.forEach((fn) => {
     try {
-      fn(motivo);
+      fn(motivos);
     } catch (e) {
       console.error("[estado] ouvinte falhou:", e);
     }
   });
+}
+
+/**
+ * Junta todas as notificações de `fn` numa só, emitida no fim.
+ *
+ * É o que impede o sync de congelar o celular: `aplicarRemoto()` roda uma vez
+ * por registro baixado e cada uma disparava um redesenho COMPLETO de quatro
+ * telas (ranking, histórico, geral e ajustes) — 100 registros viravam 400
+ * redesenhos, cada um refazendo listas inteiras por `innerHTML` e relendo as
+ * fotos do IndexedDB. Agora é um redesenho por sincronização.
+ *
+ * Reentrante: chamadas aninhadas só emitem quando a mais externa termina.
+ */
+export async function emLote(fn) {
+  profundidadeLote++;
+  try {
+    return await fn();
+  } finally {
+    profundidadeLote--;
+    if (profundidadeLote === 0 && motivosPendentes.size) {
+      const motivos = motivosPendentes;
+      motivosPendentes = new Set();
+      emitir(motivos);
+    }
+  }
 }
 
 // ---- localStorage para metadados leves ------------------------------------
@@ -143,10 +180,18 @@ async function garantirPescadores() {
   );
 }
 
-/** Nomes dos pescadores ativos (não removidos), lidos do store. */
+/**
+ * Nomes dos pescadores ativos (não removidos), lidos do store.
+ *
+ * Ordena com as regras do português: o IndexedDB devolve por ordem de código
+ * do caractere, que joga qualquer nome acentuado para depois do "Z".
+ */
 async function pescadoresAtivos() {
   const regs = await db.listar(db.STORES.pescadores);
-  return regs.filter((p) => !p.removido).map((p) => p.nome);
+  return regs
+    .filter((p) => !p.removido)
+    .map((p) => p.nome)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 /**
@@ -282,13 +327,27 @@ async function gravarPescador(nome, removido, atualizadaEm) {
 
 // ---- Etapas ---------------------------------------------------------------
 
-export async function criarEtapa({ nome, local = "", data = hoje() }) {
+/**
+ * Cria uma etapa.
+ *
+ * `id` e `tornarAtual` existem para a importação: ela precisa manter o id do
+ * arquivo (senão reimportar o mesmo export duplica tudo) e não pode ficar
+ * trocando a etapa atual a cada etapa lida.
+ */
+export async function criarEtapa({
+  id = null,
+  nome,
+  local = "",
+  data = hoje(),
+  encerrada = false,
+  tornarAtual = true,
+}) {
   const etapa = {
-    id: novoId("etp"),
+    id: id || novoId("etp"),
     nome: nome?.trim() || "Etapa sem nome",
     local: local.trim(),
     data,
-    encerrada: false,
+    encerrada: !!encerrada,
     removida: false,
     criadaEm: new Date().toISOString(),
     atualizadaEm: new Date().toISOString(),
@@ -296,7 +355,7 @@ export async function criarEtapa({ nome, local = "", data = hoje() }) {
   await db.put(db.STORES.etapas, etapa);
   await db.enfileirar("upsert", "etapa", etapa);
   estado.etapas.push(etapa);
-  definirEtapaAtual(etapa.id);
+  if (tornarAtual) definirEtapaAtual(etapa.id);
   await atualizarContagemPendentes();
   notificar("etapas");
   return etapa;
@@ -319,21 +378,31 @@ export async function atualizarEtapa(id, campos) {
  * Soft delete porque a exclusão precisa se propagar para os outros aparelhos.
  */
 export async function removerEtapa(id) {
-  await atualizarEtapa(id, { removida: true });
+  await emLote(async () => {
+    await atualizarEtapa(id, { removida: true });
 
-  for (const pesca of estado.pescas.filter((p) => p.etapaId === id && !p.removida)) {
-    await removerPesca(pesca.id);
-  }
+    for (const pesca of estado.pescas.filter((p) => p.etapaId === id && !p.removida)) {
+      await removerPesca(pesca.id);
+    }
 
-  if (estado.etapaAtualId === id) {
-    definirEtapaAtual(etapasAtivas()[0]?.id ?? null);
-  }
+    // Só mexe na etapa da tela se foi ELA que saiu — remover uma etapa antiga
+    // não pode tirar ninguém de onde estava.
+    //
+    // Quando é a atual que sai, `garantirEtapaAberta()` reaponta para outra e,
+    // se não sobrou nenhuma, cria uma. Antes o app ficava sem lugar para lançar
+    // peixe: o "+" só respondia "crie uma etapa antes" até alguém recarregar a
+    // página, que era a única hora em que essa função rodava.
+    if (estado.etapaAtualId === id || !etapaAtual()) {
+      await garantirEtapaAberta();
+    }
+  });
   notificar("etapas");
 }
 
 // ---- Pescas ---------------------------------------------------------------
 
 export async function adicionarPesca({
+  id = null, // usado só pela importação, para preservar o id do arquivo
   etapaId,
   pescador,
   tipo,
@@ -350,7 +419,7 @@ export async function adicionarPesca({
   }
 
   const pesca = {
-    id: novoId("psc"),
+    id: id || novoId("psc"),
     etapaId,
     pescador,
     tipo,
@@ -462,6 +531,9 @@ export async function removerPeixe(nome) {
   await db.put(db.STORES.peixes, registro);
   await db.enfileirar("upsert", "peixe", registro);
   estado.peixes[i] = registro;
+  // Faltava: sem isto o chip do cabeçalho continuava dizendo "sincronizado"
+  // com a remoção ainda parada na fila.
+  await atualizarContagemPendentes();
   notificar("peixes");
 }
 

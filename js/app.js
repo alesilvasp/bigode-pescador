@@ -58,9 +58,11 @@ async function iniciar() {
   renderizarAjustes();
 
   // ---- Reage a qualquer mudança de estado
-  aoMudar((motivo) => {
-    if (motivo === "pescadores" || motivo === "eu") preencherSelectPescadores();
-    if (motivo === "peixes") preencherSelectPeixes();
+  // `motivos` é um Set: uma sincronização que baixa vários registros entrega
+  // tudo de uma vez só, em vez de um redesenho por registro.
+  aoMudar((motivos) => {
+    if (motivos.has("pescadores") || motivos.has("eu")) preencherSelectPescadores();
+    if (motivos.has("peixes")) preencherSelectPeixes();
     renderizarTelas();
     renderizarAjustes();
   });

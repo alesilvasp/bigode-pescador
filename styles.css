@@ -612,6 +612,19 @@ input[type="checkbox"] { width: auto; }
   align-items: baseline;
 }
 .slider-topo strong { color: var(--ciano); font-size: 1.1rem; }
+
+/* Tamanho exato: dá para digitar em vez de mirar no slider com a mão molhada,
+   e aceita peixe maior que o fim da régua. */
+.tamanho-exato { display: flex; align-items: center; gap: 6px; }
+.tamanho-exato input {
+  width: 5.5rem;
+  padding: 6px 8px;
+  text-align: right;
+  color: var(--ciano);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.tamanho-exato .un-fixa { color: var(--texto-suave); font-size: 0.9rem; }
 input[type="range"] {
   padding: 0;
   height: 34px;

@@ -2,7 +2,7 @@
 //  PWA — service worker, instalação e atalhos.
 // =========================================================================
 
-import { $, toast } from "./ui.js";
+import { $, avisoComAcao, toast } from "./ui.js";
 
 let promptInstalacao = null;
 let registroSW = null;
@@ -55,10 +55,9 @@ export async function registrarServiceWorker() {
 }
 
 function oferecerAtualizacao(worker) {
-  const el = $("#toast");
-  el.className = "toast acao";
-  el.innerHTML = `Nova versão disponível. <button id="btn-recarregar" class="link-toast">atualizar</button>`;
-  el.classList.remove("oculto");
+  avisoComAcao(
+    `Nova versão disponível. <button id="btn-recarregar" class="link-toast">atualizar</button>`
+  );
 
   $("#btn-recarregar").addEventListener("click", () => {
     worker.postMessage({ tipo: "ASSUMIR_CONTROLE" });
@@ -73,6 +72,16 @@ export async function buscarAtualizacao() {
   }
   try {
     await registroSW.update();
+
+    // `update()` termina com sucesso TAMBÉM quando encontra uma versão nova —
+    // quem avisa é o evento `updatefound`, que chega depois. Sem esta checagem
+    // o botão respondia "já está na versão mais recente" justamente no momento
+    // em que tinha acabado de baixar uma, e a pessoa desistia de atualizar.
+    if (registroSW.installing || registroSW.waiting) {
+      toast("Versão nova encontrada — baixando…");
+      return;
+    }
+
     toast("Já está na versão mais recente.");
   } catch {
     toast("Não consegui verificar agora.", "erro");

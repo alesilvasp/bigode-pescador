@@ -295,11 +295,19 @@
           </span>
         </label>
 
-        <label class="campo-slider">
-          <span class="slider-topo">Tamanho <strong id="valor-tamanho">30,0 cm</strong></span>
-          <input id="campo-tamanho" type="range" min="0" max="100" step="0.5" value="30" />
-          <span class="slider-escala" aria-hidden="true"><i>0</i><i>25</i><i>50</i><i>75</i><i>100</i></span>
-        </label>
+        <div class="campo-slider">
+          <span class="slider-topo">
+            <label for="campo-tamanho-exato">Tamanho</label>
+            <span class="tamanho-exato">
+              <input id="campo-tamanho-exato" type="number" min="0" step="0.5"
+                     inputmode="decimal" aria-label="Tamanho em centímetros" />
+              <span class="un-fixa">cm</span>
+            </span>
+          </span>
+          <input id="campo-tamanho" type="range" min="0" max="100" step="0.5" value="30"
+                 aria-label="Tamanho, arrastando" />
+          <span id="slider-escala" class="slider-escala" aria-hidden="true"></span>
+        </div>
       </div>
 
       <label class="campo-foto">

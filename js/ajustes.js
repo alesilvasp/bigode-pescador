@@ -22,6 +22,38 @@ import * as sync from "./sync.js";
 import { $, esc, toast } from "./ui.js";
 import { abrirModalPeixe } from "./modais.js";
 
+// ---- Campos em edição ------------------------------------------------------
+//
+// A tela de Ajustes é redesenhada a CADA mudança de estado — inclusive a que
+// vem do sync, que roda sozinho a cada 20 s. Sem esta proteção, quem estivesse
+// digitando via o texto sumir na mão: a calibragem voltava para 1 e a URL do
+// Supabase esvaziava no meio da colagem, sem aviso nenhum.
+//
+// Um campo é marcado ao receber a primeira digitação e liberado quando o valor
+// é salvo, descartado ou desligado.
+
+const CAMPOS_DIGITAVEIS = ["#ajuste-mult-peso", "#ajuste-mult-tamanho", "#sync-url", "#sync-key"];
+
+function protegerCamposDigitados() {
+  CAMPOS_DIGITAVEIS.forEach((sel) =>
+    $(sel).addEventListener("input", (e) => {
+      e.target.dataset.editando = "sim";
+    })
+  );
+}
+
+/** Escreve no campo, a menos que o usuário tenha mexido nele e não salvo. */
+function preencherCampo(seletor, valor) {
+  const el = $(seletor);
+  if (el.dataset.editando === "sim") return;
+  el.value = valor;
+}
+
+/** Some com a marca: o valor foi salvo ou descartado, pode voltar a atualizar. */
+function liberarCampos(...seletores) {
+  seletores.forEach((sel) => delete $(sel).dataset.editando);
+}
+
 // ---- Render ----------------------------------------------------------------
 
 export function renderizarAjustes() {
@@ -67,8 +99,8 @@ function renderizarPeixes() {
 }
 
 function renderizarFormula() {
-  $("#ajuste-mult-peso").value = estado.ajustes.multiplicadorPeso;
-  $("#ajuste-mult-tamanho").value = estado.ajustes.multiplicadorTamanho;
+  preencherCampo("#ajuste-mult-peso", estado.ajustes.multiplicadorPeso);
+  preencherCampo("#ajuste-mult-tamanho", estado.ajustes.multiplicadorTamanho);
   atualizarSimulacao();
 }
 
@@ -88,8 +120,8 @@ function atualizarSimulacao() {
 
 function renderizarSync() {
   const cfg = sync.lerConfig();
-  $("#sync-url").value = cfg?.url ?? "";
-  $("#sync-key").value = cfg?.anonKey ?? "";
+  preencherCampo("#sync-url", cfg?.url ?? "");
+  preencherCampo("#sync-key", cfg?.anonKey ?? "");
   $("#bloco-convite").classList.toggle("oculto", !cfg);
 
   const status = $("#status-sync");
@@ -119,6 +151,8 @@ function renderizarSobre() {
 // ---- Eventos ---------------------------------------------------------------
 
 export function iniciarAjustes() {
+  protegerCamposDigitados();
+
   // ---- Quem sou eu
   $("#ajuste-eu").addEventListener("change", (e) => {
     definirEu(e.target.value || null);
@@ -134,7 +168,7 @@ export function iniciarAjustes() {
     }
   });
 
-  $("#lista-pescadores").addEventListener("click", (e) => {
+  $("#lista-pescadores").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-remover-pescador]");
     if (!btn) return;
     const nome = btn.dataset.removerPescador;
@@ -142,7 +176,9 @@ export function iniciarAjustes() {
     if (qtd && !confirm(`${nome} tem ${qtd} pescas registradas. Elas continuam salvas, mas ele sai do ranking. Remover?`)) {
       return;
     }
-    definirPescadores(estado.pescadores.filter((n) => n !== nome));
+    // `definirPescadores` grava no banco e enfileira para o sync: sem await, a
+    // falha virava uma promessa rejeitada silenciosa e a lista mentia.
+    await definirPescadores(estado.pescadores.filter((n) => n !== nome));
     if (estado.eu === nome) definirEu(null);
     renderizarPescadores();
     toast("Pescador removido.");
@@ -189,12 +225,14 @@ export function iniciarAjustes() {
     const total = estado.pescas.filter((p) => !p.removida).length;
     if (total && !confirm(`Isso recalcula as ${total} pescas já registradas. Confirma?`)) return;
 
+    liberarCampos("#ajuste-mult-peso", "#ajuste-mult-tamanho");
     const mudaram = await salvarAjustes({ multiplicadorPeso: mp, multiplicadorTamanho: mt });
     toast(mudaram ? `${mudaram} ${mudaram === 1 ? "pesca recalculada" : "pescas recalculadas"}.` : "Salvo.");
   });
 
   $("#btn-restaurar-formula").addEventListener("click", async () => {
     if (!confirm("Voltar para a regra original do Rodrigo e recalcular tudo?")) return;
+    liberarCampos("#ajuste-mult-peso", "#ajuste-mult-tamanho");
     $("#ajuste-mult-peso").value = AJUSTES_PADRAO.multiplicadorPeso;
     $("#ajuste-mult-tamanho").value = AJUSTES_PADRAO.multiplicadorTamanho;
     await salvarAjustes({
@@ -209,6 +247,9 @@ export function iniciarAjustes() {
   $("#btn-salvar-sync").addEventListener("click", salvarSync);
   $("#btn-remover-sync").addEventListener("click", () => {
     if (!confirm("Desligar a sincronização? Os dados continuam neste aparelho.")) return;
+    liberarCampos("#sync-url", "#sync-key");
+    $("#sync-url").value = "";
+    $("#sync-key").value = "";
     sync.limparConfig();
     toast("Sincronização desligada.");
   });
@@ -226,7 +267,7 @@ export function iniciarAjustes() {
   $("#btn-compartilhar").addEventListener("click", compartilharPlacar);
 }
 
-function adicionarPescador() {
+async function adicionarPescador() {
   const campo = $("#novo-pescador");
   const nome = campo.value.trim();
   if (!nome) return;
@@ -234,7 +275,7 @@ function adicionarPescador() {
     toast("Esse pescador já está na lista.", "erro");
     return;
   }
-  definirPescadores([...estado.pescadores, nome]);
+  await definirPescadores([...estado.pescadores, nome]);
   renderizarPescadores();
   campo.value = "";
   toast("Pescador adicionado.");
@@ -272,6 +313,7 @@ async function salvarSync() {
     return;
   }
 
+  liberarCampos("#sync-url", "#sync-key");
   sync.salvarConfig(url, key);
 
   try {
@@ -377,20 +419,39 @@ async function importarArquivo(e) {
       }
     }
 
+    // Os pescadores do arquivo entram antes das pescas: sem eles no elenco, a
+    // pesca importada não aparece em ranking nenhum e some sem explicação.
+    const faltando = (pacote.pescadores || []).filter((n) => !estado.pescadores.includes(n));
+    if (faltando.length) await definirPescadores([...estado.pescadores, ...faltando]);
+
+    // As etapas mantêm o id do arquivo. Antes um id novo era sorteado a cada
+    // importação, então nada nunca "já existia" — importar o mesmo arquivo
+    // duas vezes duplicava o campeonato inteiro.
     const mapaEtapas = new Map();
     for (const et of pacote.etapas) {
       const existente = estado.etapas.find((x) => x.id === et.id);
       if (existente) {
         mapaEtapas.set(et.id, et.id);
       } else {
-        const nova = await criarEtapa({ nome: et.nome, local: et.local, data: et.data });
+        const nova = await criarEtapa({
+          id: et.id,
+          nome: et.nome,
+          local: et.local,
+          data: et.data,
+          encerrada: et.encerrada,
+          tornarAtual: false,
+        });
         mapaEtapas.set(et.id, nova.id);
       }
     }
 
     let importadas = 0;
+    let repetidas = 0;
     for (const p of pacote.pescas) {
-      if (estado.pescas.some((x) => x.id === p.id)) continue;
+      if (estado.pescas.some((x) => x.id === p.id)) {
+        repetidas++;
+        continue;
+      }
 
       let foto = null;
       if (p.foto) {
@@ -402,6 +463,7 @@ async function importarArquivo(e) {
       }
 
       await adicionarPesca({
+        id: p.id,
         etapaId: mapaEtapas.get(p.etapaId) || estado.etapaAtualId,
         pescador: p.pescador,
         tipo: p.peixe,
@@ -413,7 +475,9 @@ async function importarArquivo(e) {
       importadas++;
     }
 
-    status.textContent = `${importadas} ${importadas === 1 ? "pesca importada" : "pescas importadas"}.`;
+    status.textContent =
+      `${importadas} ${importadas === 1 ? "pesca importada" : "pescas importadas"}` +
+      (repetidas ? `, ${repetidas} já ${repetidas === 1 ? "estava" : "estavam"} aqui.` : ".");
     status.className = "status-linha ok";
     toast("Importação concluída.");
   } catch (erro) {

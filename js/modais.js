@@ -87,11 +87,37 @@ export function comprimirImagem(file, maxLado = 1280, qualidade = 0.72) {
 //  Modal de pesca
 // =========================================================================
 
+/**
+ * Devolve ao select o pescador da pesca em edição, mesmo que ele já não esteja
+ * na lista.
+ *
+ * Sem isto, editar a pesca de alguém removido deixava o campo VAZIO: como ele
+ * é obrigatório, ou o formulário travava sem explicar, ou a pessoa escolhia
+ * outro nome e a pesca trocava de dono em silêncio.
+ */
+function garantirOpcaoPescador(nome) {
+  if (!nome) return;
+  const select = $("#campo-pescador");
+  if ([...select.options].some((o) => o.value === nome)) return;
+
+  const opcao = document.createElement("option");
+  opcao.value = nome;
+  opcao.textContent = `${nome} (fora da lista)`;
+  select.appendChild(opcao);
+}
+
 export async function abrirModalPesca(pesca = null) {
   const etapa = etapaAtual();
   if (!etapa) {
     toast("Crie uma etapa antes de registrar uma pesca.", "erro");
     abrirModalEtapa();
+    return;
+  }
+
+  // Sem ninguém na lista não há como registrar: o campo é obrigatório e o
+  // formulário travaria sem dizer por quê.
+  if (!pesca && !estado.pescadores.length) {
+    toast("Adicione ao menos um pescador em Ajustes.", "erro");
     return;
   }
 
@@ -106,12 +132,15 @@ export async function abrirModalPesca(pesca = null) {
   preencherSelectPeixes();
 
   if (pesca) {
+    garantirOpcaoPescador(pesca.pescador);
     $("#campo-pescador").value = pesca.pescador;
     preencherSelectPeixes(pesca.tipo);
     unidadePeso = pesca.pesoGramas >= 1000 ? "kg" : "g";
     $("#campo-peso").value =
       unidadePeso === "kg" ? (pesca.pesoGramas / 1000).toFixed(2) : Math.round(pesca.pesoGramas);
+    ajustarEscalaTamanho(pesca.tamanho);
     $("#campo-tamanho").value = pesca.tamanho;
+    $("#campo-tamanho-exato").value = pesca.tamanho;
 
     if (pesca.fotoId) {
       const url = await urlDaFoto(pesca.fotoId);
@@ -121,11 +150,12 @@ export async function abrirModalPesca(pesca = null) {
     // Pré-seleciona quem está usando o aparelho — na pesca, um toque a menos.
     if (estado.eu) $("#campo-pescador").value = estado.eu;
     unidadePeso = estado.ajustes.unidadePesoPadrao || "kg";
+    ajustarEscalaTamanho();
     $("#campo-tamanho").value = 30;
+    $("#campo-tamanho-exato").value = 30;
   }
 
   sincronizarToggleUnidade();
-  atualizarRotuloTamanho();
   atualizarModoMedidas();
   atualizarPreviewPontuacao();
   abrir("#modal-pesca");
@@ -153,9 +183,45 @@ function sincronizarToggleUnidade() {
   $$(".toggle-unidade .un").forEach((b) => b.classList.toggle("ativa", b.dataset.un === unidadePeso));
 }
 
-function atualizarRotuloTamanho() {
-  const v = parseFloat($("#campo-tamanho").value) || 0;
-  $("#valor-tamanho").textContent = `${v.toFixed(1).replace(".", ",")} cm`;
+/**
+ * Ajusta o fim da régua ao maior peixe que já apareceu.
+ *
+ * O slider era fixo em 100 cm e o `tamanhoMaximo` dos ajustes nunca era usado:
+ * um robalo de 1,20 m virava 1,00 m em silêncio, porque o range simplesmente
+ * corta o que passa do máximo. Agora a régua cresce, e o campo digitado não
+ * tem teto nenhum.
+ */
+function ajustarEscalaTamanho(valorAtual = 0) {
+  const slider = $("#campo-tamanho");
+  const configurado = Number(estado.ajustes.tamanhoMaximo) || 100;
+  const maior = estado.pescas.reduce((m, p) => Math.max(m, Number(p.tamanho) || 0), 0);
+
+  // Arredonda para cima na dezena, para a régua não terminar num número torto.
+  const teto = Math.max(configurado, Math.ceil(Math.max(maior, valorAtual) / 10) * 10);
+  slider.max = String(teto);
+
+  $("#slider-escala").innerHTML = [0, 0.25, 0.5, 0.75, 1]
+    .map((f) => `<i>${Math.round(teto * f)}</i>`)
+    .join("");
+}
+
+/** Mantém o slider e o campo digitável mostrando o mesmo número. */
+function sincronizarTamanho(origem) {
+  const slider = $("#campo-tamanho");
+  const exato = $("#campo-tamanho-exato");
+
+  if (origem === "exato") {
+    const v = Math.max(0, parseFloat(exato.value) || 0);
+    ajustarEscalaTamanho(v); // digitou algo maior que a régua? ela cresce
+    slider.value = String(v);
+  } else {
+    exato.value = String(parseFloat(slider.value) || 0);
+  }
+}
+
+/** Valor de tamanho que vale para salvar: o digitado é a fonte da verdade. */
+function tamanhoDigitado() {
+  return Math.max(0, parseFloat($("#campo-tamanho-exato").value) || 0);
 }
 
 /** Peixe de pontuação fixa não usa peso nem tamanho — esconde os campos. */
@@ -186,7 +252,7 @@ function pesoEmGramas() {
 
 function atualizarPreviewPontuacao() {
   const peixe = peixeDoFormulario();
-  const tamanho = parseFloat($("#campo-tamanho").value) || 0;
+  const tamanho = tamanhoDigitado();
   const peso = pesoEmGramas();
 
   $("#preview-pontuacao").textContent = new Intl.NumberFormat("pt-BR").format(
@@ -227,7 +293,12 @@ export function iniciarModalPesca() {
   });
 
   $("#campo-tamanho").addEventListener("input", () => {
-    atualizarRotuloTamanho();
+    sincronizarTamanho("slider");
+    atualizarPreviewPontuacao();
+  });
+
+  $("#campo-tamanho-exato").addEventListener("input", () => {
+    sincronizarTamanho("exato");
     atualizarPreviewPontuacao();
   });
 
@@ -301,7 +372,7 @@ async function salvarFormularioPesca(e) {
   const peixe = peixePorNome(tipo);
   const ehFixa = peixe?.modo === "fixa";
   const peso = ehFixa ? 0 : pesoEmGramas();
-  const tamanho = ehFixa ? 0 : parseFloat($("#campo-tamanho").value) || 0;
+  const tamanho = ehFixa ? 0 : tamanhoDigitado();
 
   if (!ehFixa && peso <= 0) {
     toast("Informe o peso do peixe.", "erro");
@@ -492,13 +563,54 @@ export function iniciarBemVindo() {
 }
 
 // =========================================================================
+//  Foto ampliada
+// =========================================================================
+
+// O lightbox cria a PRÓPRIA URL da foto em vez de reaproveitar a do card.
+// A do card pertence ao histórico e é revogada no próximo redesenho — com o
+// sync rodando a cada 20 s, a foto ampliada virava um quadrado quebrado
+// sozinha, sem ninguém encostar na tela.
+let urlLightbox = null;
+
+async function abrirLightbox(fotoId) {
+  if (!fotoId) return;
+  fecharLightbox();
+
+  const url = await urlDaFoto(fotoId);
+  if (!url) {
+    toast("Essa foto não está mais neste aparelho.", "erro");
+    return;
+  }
+
+  urlLightbox = url;
+  $("#lightbox-img").src = url;
+  $("#lightbox").classList.remove("oculto");
+}
+
+function fecharLightbox() {
+  $("#lightbox").classList.add("oculto");
+  $("#lightbox-img").removeAttribute("src");
+  if (urlLightbox) {
+    URL.revokeObjectURL(urlLightbox);
+    urlLightbox = null;
+  }
+}
+
+// =========================================================================
 //  Eventos globais dos modais
 // =========================================================================
 
 export function iniciarEventosGlobais() {
-  // Escape fecha o modal mais acima.
+  // Escape fecha o que estiver mais acima — a foto ampliada vem antes dos
+  // modais, porque é ela que fica por cima quando os dois estão abertos.
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+
+    if (!$("#lightbox").classList.contains("oculto")) {
+      fecharLightbox();
+      return;
+    }
+
     const abertos = $$(".modal:not(.oculto)");
     const ultimo = abertos[abertos.length - 1];
     if (ultimo) fechar(`#${ultimo.id}`);
@@ -533,12 +645,12 @@ export function iniciarEventosGlobais() {
 
     const foto = e.target.closest("[data-foto]");
     if (foto) {
-      $("#lightbox-img").src = foto.src;
-      $("#lightbox").classList.remove("oculto");
+      const pesca = estado.pescas.find((p) => p.id === foto.dataset.foto);
+      await abrirLightbox(pesca?.fotoId);
     }
   });
 
-  $("#lightbox").addEventListener("click", () => $("#lightbox").classList.add("oculto"));
+  $("#lightbox").addEventListener("click", fecharLightbox);
 
   // Lista de etapas na aba Geral.
   $("#lista-etapas").addEventListener("click", async (e) => {

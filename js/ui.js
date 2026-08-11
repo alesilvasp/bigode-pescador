@@ -68,12 +68,33 @@ export function toast(mensagem, tipo = "ok") {
   timerToast = setTimeout(() => el.classList.add("oculto"), 3200);
 }
 
+/**
+ * Aviso que fica na tela até alguém agir — usado pelo "nova versão disponível".
+ *
+ * Cancela o cronômetro do aviso anterior: sem isso, um toast comum disparado
+ * segundos antes escondia o aviso de atualização no meio, e a versão nova
+ * ficava esperando sem ninguém saber.
+ */
+export function avisoComAcao(html) {
+  const el = $("#toast");
+  clearTimeout(timerToast);
+  el.className = "toast acao";
+  el.innerHTML = html;
+  el.classList.remove("oculto");
+  return el;
+}
+
 // URLs de foto criadas com createObjectURL; revogadas ao re-renderizar.
 let urlsAtivas = [];
 function revogarUrls() {
   urlsAtivas.forEach((u) => URL.revokeObjectURL(u));
   urlsAtivas = [];
 }
+
+// Conta as renderizações do histórico para descartar as que ficaram para trás.
+// Ler foto do IndexedDB é assíncrono, então duas renderizações podem estar no
+// ar ao mesmo tempo — e com o sync a cada 20 s isso acontece de verdade.
+let geracaoHistorico = 0;
 
 // ---- Abas ------------------------------------------------------------------
 
@@ -201,7 +222,7 @@ function renderizarDestaque(ranking, pescas) {
 // ---- Aba Histórico ---------------------------------------------------------
 
 export async function renderizarHistorico() {
-  revogarUrls();
+  const minhaGeracao = ++geracaoHistorico;
 
   const etapa = etapaAtual();
   const filtro = $("#filtro-pescador").value;
@@ -241,10 +262,24 @@ export async function renderizarHistorico() {
     })
     .join("");
 
+  // Só agora as <img> da renderização anterior saíram do DOM — revogar antes
+  // disso deixava a tela cheia de foto quebrada quando duas renderizações se
+  // cruzavam (o sync dispara uma a cada 20 s).
+  revogarUrls();
+
   // Fotos entram depois, de forma assíncrona, para a lista aparecer na hora.
   for (const p of pescas) {
     if (!p.fotoId) continue;
     const url = await urlDaFoto(p.fotoId);
+
+    // Outra renderização começou enquanto líamos esta foto: a lista no DOM já
+    // é de outra geração. Desiste, senão colaríamos a imagem numa tela velha
+    // e vazaríamos a URL.
+    if (minhaGeracao !== geracaoHistorico) {
+      if (url) URL.revokeObjectURL(url);
+      return;
+    }
+
     if (!url) continue;
     urlsAtivas.push(url);
     const slot = lista.querySelector(`[data-slot-foto="${CSS.escape(p.id)}"]`);

@@ -153,6 +153,16 @@ export function paraXml(pacote) {
 
 // ---- CSV ------------------------------------------------------------------
 
+// Ponto e vírgula, não vírgula: o Excel em português usa a vírgula como
+// separador DECIMAL e só quebra colunas no ";". Com vírgula, o arquivo abria
+// inteiro numa coluna só — que é como o pessoal ia receber no celular.
+// O Google Sheets entende os dois.
+const SEPARADOR_CSV = ";";
+
+// "Byte order mark": sem ele o Excel lê o arquivo como se fosse da tabela de
+// caracteres antiga e "Traíra" vira "TraÃ­ra".
+const BOM_UTF8 = "﻿";
+
 export function paraCsv(pacote) {
   const cabecalho = [
     "etapa",
@@ -180,10 +190,10 @@ export function paraCsv(pacote) {
       p.data,
     ]
       .map(campoCsv)
-      .join(",")
+      .join(SEPARADOR_CSV)
   );
 
-  return [cabecalho.join(","), ...linhas].join("\n");
+  return BOM_UTF8 + [cabecalho.join(SEPARADOR_CSV), ...linhas].join("\r\n");
 }
 
 function campoCsv(v) {

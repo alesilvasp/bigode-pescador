@@ -118,17 +118,33 @@ begin
 end $$;
 
 
--- ---- Carimbo automático de atualização -----------------------------------
--- Garante que atualizada_em seja sempre confiável, mesmo que um cliente
--- com relógio errado mande uma data estranha. É o que faz o "quem escreveu
--- por último vence" funcionar direito.
+-- ---- Quem escreveu por último vence, valendo também aqui -------------------
+--
+--  O app já resolve conflito por data quando RECEBE um registro. Faltava o
+--  mesmo cuidado na hora de GRAVAR: o "merge-duplicates" que ele usa para
+--  enviar sobrescreve a linha sem olhar data nenhuma, então uma escrita velha
+--  chegando atrasada apagava uma nova.
+--
+--  O caso concreto que isso resolve: alguém instala o app num celular zerado.
+--  Ao abrir pela primeira vez, o app monta a lista de peixes padrão com data
+--  de 1970 de propósito (é o jeito de marcar "isto é só o padrão, não uma
+--  escolha de ninguém"). Se essa lista subisse por cima do banco, um peixe que
+--  o grupo tinha tirado da lista voltava para o celular de todo mundo.
+--
+--  Agora o banco ignora quem chega com data mais velha do que a que já está lá.
 
 create or replace function public.carimbar_atualizacao()
 returns trigger
 language plpgsql
 as $$
 begin
-  new.atualizada_em = greatest(now(), old.atualizada_em);
+  -- Chegou mais velho do que o que já está gravado? Não faz nada.
+  -- Devolver "old" num gatilho BEFORE mantém a linha exatamente como estava.
+  if new.atualizada_em < old.atualizada_em then
+    return old;
+  end if;
+
+  new.atualizada_em = greatest(now(), new.atualizada_em);
   return new;
 end $$;
 
