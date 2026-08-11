@@ -56,6 +56,63 @@ Também entraram, fora da lista original:
 
 ---
 
+## Rodada de QA ponta a ponta (11/08/2026)
+
+Varredura do app inteiro, com o fluxo real rodando no navegador. **15 defeitos
+corrigidos**, testes de 31 → 48. Detalhe técnico de cada um está nas
+"Armadilhas já resolvidas" do [`CLAUDE.md`](CLAUDE.md).
+
+> ⚠️ **Re-rode o `supabase/schema.sql`** no SQL Editor. O gatilho de carimbo
+> mudou (ver item 4 abaixo). É idempotente, rodar de novo não quebra nada.
+
+### Perdiam dado, em silêncio
+
+1. **O sync parava de baixar se o relógio do celular estivesse adiantado.** A
+   marca de "até onde já vi" era o relógio local; alguns minutos à frente e
+   tudo que os outros registrassem naquela janela ficava invisível **para
+   sempre**, sem erro na tela. Agora a marca vem do carimbo que o servidor
+   devolveu.
+2. **A descida cortava em 1000 registros sem avisar** e a marca passava por
+   cima do resto. Agora pagina até o fim.
+3. **Reimportar o mesmo JSON duplicava o campeonato inteiro** — os ids do
+   arquivo eram descartados, então nada nunca "já existia".
+4. **Peixe tirado da lista voltava sozinho.** Quem instalasse o app num celular
+   zerado subia a lista padrão por cima do banco, e o peixe removido voltava
+   para todo mundo. O banco agora recusa escrita mais velha que a gravada.
+5. **Editar a pesca de um pescador removido trocava o dono dela** (ou travava o
+   formulário sem dizer por quê). O nome volta ao seletor marcado como "fora
+   da lista".
+
+### Atrapalhavam na hora de usar
+
+6. **A tela de Ajustes apagava o que você estava digitando.** Ela é redesenhada
+   a cada sync — de 20 em 20 segundos — e a calibragem voltava para `1` e a URL
+   do Supabase esvaziava no meio da colagem.
+7. **O sync congelava o celular:** cada registro baixado redesenhava quatro
+   telas inteiras. 100 registros = 400 redesenhos. Agora é um por sincronização.
+8. **Foto sumia da tela sozinha** quando duas renderizações do histórico se
+   cruzavam, e a **foto ampliada quebrava** ao chegar um sync.
+9. **Remover a última etapa deixava o app sem onde registrar** até alguém
+   recarregar a página.
+10. **Peixe acima de 1 metro era cortado para 1 metro** — o slider era fixo e o
+    `tamanhoMaximo` dos ajustes nunca tinha sido ligado. A régua agora cresce.
+11. **Dava para digitar o tamanho.** Mirar 47,5 cm num slider com a mão molhada
+    era o pior momento do formulário.
+
+### Menores
+
+12. **CSV abria quebrado no Excel** — sem BOM (`Traíra` virava `TraÃ­ra`) e
+    separado por vírgula, o que joga tudo numa coluna só em português.
+13. **"Buscar atualização" dizia "já está na versão mais recente"** mesmo tendo
+    acabado de encontrar uma nova.
+14. **O aviso de versão nova podia sumir** antes de alguém ver, comido pelo
+    cronômetro de um aviso anterior.
+15. **Escape não fechava a foto ampliada**; a contagem de pendentes não
+    atualizava ao remover peixe; nomes com acento eram ordenados depois do "Z";
+    e o cabeçalho do service worker descrevia o oposto do que o código faz.
+
+---
+
 ## Pendências com o grupo (não são código)
 
 ### ⚖️ Aberta: o peso dominar é intencional?

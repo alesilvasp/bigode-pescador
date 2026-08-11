@@ -144,6 +144,38 @@ quando o registro volta do servidor.
    ficavam com duas etapas iguais e a pesca de um sumia no outro. Por isso
    `sincronizar()` **aguarda a sync em andamento** em vez de sair com "ja-rodando":
    o `await` do boot precisa esperar o download de verdade.
+10. **A marca d'água do sync vem do DADO, nunca de `new Date()`.** Ela guardava
+    o relógio local, e bastava o celular estar alguns minutos adiantado para
+    gravar uma marca no futuro: tudo que os outros registrassem naquele
+    intervalo tinha carimbo menor e **nunca mais era pedido** — sumia em
+    silêncio, sem erro na tela. Hoje `baixarMudancas()` devolve `ateOnde`, o
+    maior `atualizada_em` recebido, e é isso que fica gravado. Regra isolada em
+    `carimboMaisRecente()`, com teste em `tests/sync.test.js`.
+11. **A descida é paginada, e por `offset`.** Um `limit` fixo truncava em
+    silêncio: a marca avançava por cima do que não coubera. E não dá para
+    paginar "continuando do último carimbo" porque um insert em lote grava
+    todas as linhas com o mesmo `now()` (é o tempo da transação) — a mesma
+    página voltaria para sempre.
+12. **Sync notifica UMA vez, via `emLote()`.** `aplicarRemoto()` roda por
+    registro e cada `notificar()` redesenha quatro telas inteiras: 100
+    registros viravam 400 redesenhos com `innerHTML` e releitura das fotos.
+    Quem escrever laço que mexe em muitos registros deve envolvê-lo em
+    `emLote()`. O ouvinte de `aoMudar` recebe um **Set** de motivos.
+13. **A tela de Ajustes não escreve em campo que está sendo digitado.** Ela é
+    redesenhada a cada mudança de estado — inclusive a do sync, a cada 20 s —
+    e apagava a calibragem e as credenciais do Supabase no meio da digitação.
+    Use `preencherCampo()` para escrever e `liberarCampos()` ao salvar.
+14. **Só revogue `objectURL` de foto depois de trocar o `innerHTML`.** Duas
+    renderizações do histórico se cruzam (ler foto é assíncrono); revogar no
+    começo matava as URLs que a outra tinha acabado de colar na tela. Há um
+    contador de geração para a renderização atrasada desistir. A foto ampliada
+    cria a **própria** URL pelo mesmo motivo.
+15. **O banco recusa escrita mais velha que a gravada.** O `merge-duplicates`
+    do PostgREST sobrescreve sem olhar data: a lista de peixes padrão que um
+    celular novo cria (carimbada em 1970 de propósito) ressuscitava, para o
+    grupo inteiro, peixe que já tinha sido tirado da lista. O gatilho
+    `carimbar_atualizacao` agora devolve `old` nesse caso. **Quem provisionou
+    antes precisa re-rodar o `schema.sql`.**
 
 ## Estado do roadmap
 
