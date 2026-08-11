@@ -144,6 +144,7 @@ export function iniciarAjustes() {
     }
     definirPescadores(estado.pescadores.filter((n) => n !== nome));
     if (estado.eu === nome) definirEu(null);
+    renderizarPescadores();
     toast("Pescador removido.");
   });
 
@@ -234,6 +235,7 @@ function adicionarPescador() {
     return;
   }
   definirPescadores([...estado.pescadores, nome]);
+  renderizarPescadores();
   campo.value = "";
   toast("Pescador adicionado.");
 }
