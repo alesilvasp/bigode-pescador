@@ -76,8 +76,12 @@ em `1` = regra original intacta.
 - **Etapa** — uma pescaria. Tem ranking próprio; a aba Geral soma todas.
 - **Pesca** — pertence a uma etapa. Guarda `fator` e `modo` como snapshot.
 - **Peixe** — a chave é o `nome`.
-- Exclusão é **soft delete** (`removida: true`), para a exclusão se propagar
-  no sync. Nada é apagado de verdade.
+- **Pescador** — a chave é o `nome`; `{ nome, removido, atualizadaEm }`. A UI usa
+  `estado.pescadores` como lista de nomes ativos, derivada do store `pescadores`
+  (IndexedDB v2). `definirPescadores()` faz o diff e grava um registro por
+  mudança; por isso é `async`.
+- Exclusão é **soft delete** (`removida`/`removido: true`), para a exclusão se
+  propagar no sync. Nada é apagado de verdade.
 
 ### Sincronização
 
@@ -92,6 +96,11 @@ O `outbox` só recebe itens se houver Supabase configurado; quem liga depois usa
 **As fotos não sobem.** Ficam no aparelho de quem tirou — economiza cota e não
 faz falta para o ranking. Por isso `aplicarRemoto()` preserva o `fotoId` local
 quando o registro volta do servidor.
+
+> ⚠️ **Ao adicionar/alterar tabela no banco, re-rode o `supabase/schema.sql`** no
+> SQL Editor (é idempotente). A tabela `pescadores` foi adicionada depois do
+> setup inicial — quem provisionou antes precisa rodar de novo, senão o sync de
+> pescadores dá 404 na tabela.
 
 ## Convenções
 
