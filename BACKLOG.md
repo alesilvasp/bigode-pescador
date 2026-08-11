@@ -29,13 +29,6 @@ Também entraram, fora da lista original:
 
 ## Pendências com o grupo (não são código)
 
-### ❓ Aberta: qual o fator da Corvina?
-
-É o único peixe **sem confirmação do Rodrigo**. O Alex propôs uma lista em 06/08
-(Robalo 3, Pescada 3, Traíra 3, **Corvina 2**, Bagre 1) e pediu "confirma o fator".
-O Rodrigo corrigiu todos os outros para cima — Robalo/Pescada/Traíra para 5,
-Bagre para 2 — mas nunca falou da corvina. O app está com **4**, que é um chute.
-
 ### ⚖️ Aberta: o peso dominar é intencional?
 
 Como entra em gramas, um robalo de 2 kg dá 10.350 pontos e o tamanho vira 3% do
@@ -51,6 +44,10 @@ equilibrar em **Ajustes → Calibragem** sem tocar no código: multiplicador de 
   peixe (robalo - 5 / bagre - 2)"*. O código tinha 3; corrigido.
 - **Peixes de pontuação fixa removidos.** Os valores (Arraia 50, Tubarão 75,
   Peixe Espada 60, Tucunaré 120) eram brincadeira do Luis Fellipe, não regra.
+- **Corvina = 4**, confirmado pelo Alex em 11/08. Vale saber que é o único fator
+  que **não** vem do Rodrigo: a tabela do Alex em 06/08 dizia 2, ele nunca se
+  manifestou sobre a corvina, e o 4 provavelmente veio do próprio código. Se
+  algum dia parecer desproporcional, é ali que está a folga.
 
 ---
 

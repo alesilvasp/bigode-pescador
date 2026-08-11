@@ -31,8 +31,9 @@ export const PEIXES_PADRAO = [
   { nome: "Pescada", fator: 5, modo: "formula" },
   // Alex: "Traíra? 5?" → Rodrigo: "sim sim" — 14:40
   { nome: "Traíra", fator: 5, modo: "formula" },
-  // ⚠️ SEM CONFIRMAÇÃO DO RODRIGO. O Alex propôs 2 numa lista que o Rodrigo
-  // corrigiu inteira para cima, mas nunca falou da corvina. Ver BACKLOG.md.
+  // Confirmado pelo Alex em 11/08/2026 ("acho que corvina tá 4"). Atenção: a
+  // tabela que ele mandou em 06/08 dizia 2, e o Rodrigo nunca falou da corvina
+  // — então 4 vem do Alex, não da regra original. Ver BACKLOG.md.
   { nome: "Corvina", fator: 4, modo: "formula" },
   // "bagre - 2" — Rodrigo, 04:37
   { nome: "Bagre", fator: 2, modo: "formula" },

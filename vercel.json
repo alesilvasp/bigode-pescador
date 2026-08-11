@@ -6,7 +6,6 @@
   "cleanUrls": true,
   "headers": [
     {
-      "comment": "O service worker NUNCA pode vir de cache: é ele que entrega as atualizações. Sem isto, um celular pode ficar semanas com a versão velha.",
       "source": "/service-worker.js",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
@@ -14,7 +13,6 @@
       ]
     },
     {
-      "comment": "O manifest muda pouco, mas precisa do content-type certo para o Android aceitar a instalação.",
       "source": "/manifest.webmanifest",
       "headers": [
         { "key": "Content-Type", "value": "application/manifest+json; charset=utf-8" },
@@ -22,7 +20,6 @@
       ]
     },
     {
-      "comment": "O HTML também revalida sempre — quem controla o cache dos arquivos é o service worker.",
       "source": "/index.html",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },

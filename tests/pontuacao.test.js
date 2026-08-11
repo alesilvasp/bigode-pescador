@@ -82,6 +82,7 @@ describe("fatores oficiais — cada um tem fonte no grupo", () => {
     Caranha: 5, // "Mesmo peso de caranha e pescada e robalo, concordam?"
     Pescada: 5, // idem
     Traíra: 5, // Alex: "Traíra? 5?" → Rodrigo: "sim sim"
+    Corvina: 4, // Alex, 11/08 — único que não vem do Rodrigo
     Bagre: 2, // "robalo - 5 / bagre - 2"
     "Peixe Galo": 10, // "os super trunfo, tipo, peixe galo... colocaria 10 pontos"
     Baiacu: -0.5, // "a coloca baiacu menos 0,5"
