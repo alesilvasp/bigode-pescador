@@ -138,6 +138,12 @@ quando o registro volta do servidor.
    pelo `cmd.exe`, que não expande glob, e o Node 20 não interpreta o padrão
    sozinho. Pior, ele **sai com código 0** — o teste não roda e ninguém percebe.
    `node --test tests/` funciona em todo SO e versão, e sai 1 quando falha.
+9. **A etapa inicial é criada DEPOIS do primeiro sync.** `garantirEtapaAberta()`
+   roda no boot só depois de um `sincronizar()` aguardado (ver `app.js`). Se cada
+   aparelho criasse a "1ª Etapa" no `carregar()`, com id próprio, PC e celular
+   ficavam com duas etapas iguais e a pesca de um sumia no outro. Por isso
+   `sincronizar()` **aguarda a sync em andamento** em vez de sair com "ja-rodando":
+   o `await` do boot precisa esperar o download de verdade.
 
 ## Estado do roadmap
 
