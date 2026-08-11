@@ -25,7 +25,7 @@ const INTERVALO_POLLING = 20_000;
 const CHAVE_ULTIMO_SYNC = "bigode-pescador:ultimo-sync";
 
 let timerPolling = null;
-let sincronizando = false;
+let promessaSync = null; // sincronização em andamento — novas chamadas aguardam esta
 
 export const situacao = {
   configurado: false,
@@ -266,10 +266,21 @@ async function baixarMudancas() {
 
 export async function sincronizar({ silencioso = false } = {}) {
   if (!estaConfigurado()) return { ok: false, motivo: "nao-configurado" };
-  if (sincronizando) return { ok: false, motivo: "ja-rodando" };
   if (!navigator.onLine) return { ok: false, motivo: "offline" };
 
-  sincronizando = true;
+  // Já tem uma rodando? Aguarda ELA em vez de disparar outra — assim quem chama
+  // com await (o boot, antes de criar a etapa inicial) espera o download acabar.
+  if (promessaSync) return promessaSync;
+
+  promessaSync = executarSincronizacao({ silencioso });
+  try {
+    return await promessaSync;
+  } finally {
+    promessaSync = null;
+  }
+}
+
+async function executarSincronizacao({ silencioso }) {
   situacao.sincronizando = true;
   if (!silencioso) notificar("sync");
 
@@ -291,7 +302,6 @@ export async function sincronizar({ silencioso = false } = {}) {
     console.warn("[sync] falhou:", e.message);
     return { ok: false, motivo: "erro", erro: e.message };
   } finally {
-    sincronizando = false;
     situacao.sincronizando = false;
     notificar("sync");
   }

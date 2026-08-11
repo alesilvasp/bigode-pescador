@@ -5,7 +5,7 @@
 //  sincronização. O app precisa estar utilizável antes de qualquer rede.
 // =========================================================================
 
-import { aoMudar, carregar, estado } from "./estado.js";
+import { aoMudar, carregar, estado, garantirEtapaAberta } from "./estado.js";
 import * as sync from "./sync.js";
 import * as pwa from "./pwa.js";
 import { aplicarConviteDaUrl, iniciarAjustes, renderizarAjustes } from "./ajustes.js";
@@ -70,6 +70,18 @@ async function iniciar() {
 
   // Link de convite tem prioridade: pode ser a primeira vez deste aparelho.
   aplicarConviteDaUrl();
+
+  // Sincroniza ANTES de garantir a etapa inicial: se outro aparelho já criou a
+  // "1ª Etapa", baixamos a existente em vez de criar uma duplicada. A tela já
+  // está no ar ("Nenhuma etapa") e assenta assim que o sync + a etapa chegam.
+  if (sync.estaConfigurado() && navigator.onLine) {
+    try {
+      await sync.sincronizar({ silencioso: true });
+    } catch (e) {
+      console.warn("[app] sync inicial falhou:", e);
+    }
+  }
+  await garantirEtapaAberta();
   sync.iniciar();
 
   // Clicar no link de convite com o app JÁ ABERTO só troca o fragmento da

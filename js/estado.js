@@ -85,7 +85,18 @@ export async function carregar() {
   estado.pescadores = await pescadoresAtivos();
   estado.pendentesSync = await db.contarPendentes();
 
-  // Precisa existir uma etapa ABERTA para o app ter onde registrar. Só
+  notificar("carga");
+}
+
+/**
+ * Garante que exista uma etapa ABERTA para registrar, e aponta a atual.
+ *
+ * É chamada pelo app.js **depois da primeira sincronização**: assim, se outro
+ * aparelho já criou a "1ª Etapa", este usa a que veio do servidor em vez de
+ * criar uma duplicada. Criar aqui, antes do sync, era a causa das etapas
+ * repetidas entre celular e PC.
+ */
+export async function garantirEtapaAberta() {
   // "existir etapa" não basta: a migração da v1 cria uma já encerrada, e o
   // pessoal abriria o app sem lugar para lançar o próximo peixe.
   if (!estado.etapas.filter((e) => !e.removida && !e.encerrada).length) {
@@ -99,8 +110,6 @@ export async function carregar() {
     estado.etapaAtualId = viva?.id ?? null;
     gravarLocal(CHAVES.etapaAtual, estado.etapaAtualId);
   }
-
-  notificar("carga");
 }
 
 // Carimbo dos registros semeados. Precisa ser BEM antigo: assim, qualquer edição
