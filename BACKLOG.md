@@ -27,6 +27,26 @@ Também entraram, fora da lista original:
 
 ---
 
+## Infra em produção (feito em 06/08)
+
+- **Vercel ligado** — auto-deploy a cada push na `main`:
+  https://bigode-pescador.vercel.app
+- **Supabase provisionado** — projeto criado, `schema.sql` aplicado no SQL Editor,
+  credenciais coladas no app (Ajustes → Sincronização). **Sync validado ponta a
+  ponta em produção** (upload subindo pras tabelas `etapas`/`peixes`/`pescas`).
+- **3 correções no `js/sync.js`** durante a validação — quem já tinha clonado
+  precisa dar `git pull`:
+  1. Resposta sem corpo do Supabase (POST `return=minimal` devolve **201 vazio**)
+     — evita `Unexpected end of JSON input`.
+  2. `?columns=` no insert em lote — evita `PGRST102 "All object keys must match"`.
+  3. Mapeadores nunca emitem `undefined` em coluna `NOT NULL` — evita `23502`
+     em `pontos_fixos`.
+
+> Para os outros 3 pescadores entrarem no mesmo banco: mesma **URL + anon key**
+> (ou o link de convite da tela de Ajustes).
+
+---
+
 ## Pendências com o grupo (não são código)
 
 ### ⚖️ Aberta: o peso dominar é intencional?

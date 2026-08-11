@@ -116,8 +116,20 @@ quando o registro volta do servidor.
    troca o fragmento; sem isso, o convite passava batido.
 5. **A migração da v1 cria uma etapa aberta.** A etapa importada nasce encerrada;
    sem a nova, o app abriria sem lugar para registrar.
+6. **`chamar()` trata resposta sem corpo.** Um POST com `Prefer: return=minimal`
+   volta **201 vazio** (não 204); ler `resp.json()` direto dá "Unexpected end of
+   JSON input". Faz `resp.text()` e só parseia se veio conteúdo.
+7. **Insert em lote não emite `undefined`.** O PostgREST exige as mesmas chaves em
+   todos os objetos do lote, e o `JSON.stringify` descarta campos `undefined` —
+   linhas com chaves diferentes davam **PGRST102**. Além do `?columns=`, os
+   mapeadores em `PARA_BANCO` coalescem cada campo no default do schema, senão
+   uma coluna `NOT NULL` (ex.: `pontos_fixos`) recebe NULL e dá **23502**.
 
 ## Estado do roadmap
 
 Feito: Vercel-ready, PWA completo, etapas, edição, IndexedDB, export JSON/XML/CSV,
-tela de ajustes, sincronização. O que sobrou está em [`BACKLOG.md`](BACKLOG.md).
+tela de ajustes, sincronização.
+
+**Sincronização ligada em produção (06/08):** projeto Supabase criado, `schema.sql`
+aplicado e sync validado ponta a ponta na URL da Vercel. Detalhes e o que sobrou
+estão em [`BACKLOG.md`](BACKLOG.md).
