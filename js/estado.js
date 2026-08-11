@@ -72,16 +72,17 @@ function gravarLocal(chave, valor) {
 
 export async function carregar() {
   estado.ajustes = { ...AJUSTES_PADRAO, ...lerLocal(CHAVES.ajustes, {}) };
-  estado.pescadores = lerLocal(CHAVES.pescadores, [...PESCADORES_PADRAO]);
   estado.eu = lerLocal(CHAVES.eu, null);
   estado.etapaAtualId = lerLocal(CHAVES.etapaAtual, null);
 
   await garantirPeixesPadrao();
+  await garantirPescadores();
   await migrarDaV1();
 
   estado.etapas = await db.listar(db.STORES.etapas);
   estado.pescas = await db.listar(db.STORES.pescas);
   estado.peixes = await db.listar(db.STORES.peixes);
+  estado.pescadores = await pescadoresAtivos();
   estado.pendentesSync = await db.contarPendentes();
 
   // Precisa existir uma etapa ABERTA para o app ter onde registrar. Só
@@ -110,6 +111,28 @@ async function garantirPeixesPadrao() {
     db.STORES.peixes,
     PEIXES_PADRAO.map((p) => ({ ...p, padrao: true, atualizadaEm: new Date().toISOString() }))
   );
+}
+
+/**
+ * Semeia os pescadores no store na primeira execução, migrando a lista que já
+ * existia no localStorage — assim os que o usuário tinha adicionado não se
+ * perdem e passam a fazer parte do que é sincronizado.
+ */
+async function garantirPescadores() {
+  const existentes = await db.listar(db.STORES.pescadores);
+  if (existentes.length) return;
+  const nomes = lerLocal(CHAVES.pescadores, [...PESCADORES_PADRAO]);
+  const agora = new Date().toISOString();
+  await db.putVarios(
+    db.STORES.pescadores,
+    nomes.map((nome) => ({ nome, removido: false, atualizadaEm: agora }))
+  );
+}
+
+/** Nomes dos pescadores ativos (não removidos), lidos do store. */
+async function pescadoresAtivos() {
+  const regs = await db.listar(db.STORES.pescadores);
+  return regs.filter((p) => !p.removido).map((p) => p.nome);
 }
 
 /**
@@ -218,10 +241,29 @@ export function definirEtapaAtual(id) {
   notificar("etapa-atual");
 }
 
-export function definirPescadores(lista) {
-  estado.pescadores = lista;
-  gravarLocal(CHAVES.pescadores, lista);
+export async function definirPescadores(lista) {
+  const antes = new Set(estado.pescadores);
+  const depois = new Set(lista);
+
+  // Atualiza estado e UI na hora; a persistência e o sync rodam logo abaixo.
+  estado.pescadores = [...lista];
+  gravarLocal(CHAVES.pescadores, estado.pescadores);
   notificar("pescadores");
+
+  // Cada mudança vira um registro no store, com soft-delete, para sincronizar
+  // igual aos peixes: quem entrou vira removido=false; quem saiu, removido=true.
+  const agora = new Date().toISOString();
+  for (const nome of depois) if (!antes.has(nome)) await gravarPescador(nome, false, agora);
+  for (const nome of antes) if (!depois.has(nome)) await gravarPescador(nome, true, agora);
+
+  await atualizarContagemPendentes();
+  notificar("pescadores");
+}
+
+async function gravarPescador(nome, removido, atualizadaEm) {
+  const registro = { nome, removido, atualizadaEm };
+  await db.put(db.STORES.pescadores, registro);
+  await db.enfileirar("upsert", "pescador", registro);
 }
 
 // ---- Etapas ---------------------------------------------------------------
@@ -444,6 +486,8 @@ export async function atualizarContagemPendentes() {
 
 /** Aplica um registro que veio do servidor, sem reenfileirar para sync. */
 export async function aplicarRemoto(entidade, registro) {
+  if (entidade === "pescador") return aplicarPescadorRemoto(registro);
+
   const store = { etapa: db.STORES.etapas, pesca: db.STORES.pescas, peixe: db.STORES.peixes }[
     entidade
   ];
@@ -474,6 +518,16 @@ export async function aplicarRemoto(entidade, registro) {
   else lista.push(registro);
 
   notificar(entidade === "pesca" ? "pescas" : entidade === "etapa" ? "etapas" : "peixes");
+}
+
+/** Pescador vindo do servidor: aplica com last-write-wins e refaz a lista ativa. */
+async function aplicarPescadorRemoto(registro) {
+  const local = await db.obter(db.STORES.pescadores, registro.nome);
+  if (local && local.atualizadaEm > registro.atualizadaEm) return;
+  await db.put(db.STORES.pescadores, registro);
+  estado.pescadores = await pescadoresAtivos();
+  gravarLocal(CHAVES.pescadores, estado.pescadores);
+  notificar("pescadores");
 }
 
 // ---- Utilidades -----------------------------------------------------------

@@ -139,6 +139,11 @@ const PARA_BANCO = {
     removido: !!p.removido,
     atualizada_em: p.atualizadaEm ?? agora(),
   }),
+  pescador: (p) => ({
+    nome: p.nome,
+    removido: !!p.removido,
+    atualizada_em: p.atualizadaEm ?? agora(),
+  }),
 };
 
 const DO_BANCO = {
@@ -179,9 +184,14 @@ const DO_BANCO = {
     padrao: false,
     atualizadaEm: r.atualizada_em,
   }),
+  pescador: (r) => ({
+    nome: r.nome,
+    removido: !!r.removido,
+    atualizadaEm: r.atualizada_em,
+  }),
 };
 
-const TABELA = { etapa: "etapas", pesca: "pescas", peixe: "peixes" };
+const TABELA = { etapa: "etapas", pesca: "pescas", peixe: "peixes", pescador: "pescadores" };
 
 // ---- Subida (outbox → servidor) -------------------------------------------
 
@@ -204,7 +214,7 @@ async function subirPendentes() {
     if (!tabela) continue;
 
     // Se a mesma entidade mudou várias vezes, só a última versão importa.
-    const chave = entidade === "peixe" ? "nome" : "id";
+    const chave = entidade === "peixe" || entidade === "pescador" ? "nome" : "id";
     const ultimaVersao = new Map();
     itens.forEach((i) => ultimaVersao.set(i.dados[chave], i));
 
@@ -237,7 +247,7 @@ async function baixarMudancas() {
   const desde = localStorage.getItem(CHAVE_ULTIMO_SYNC) || "1970-01-01T00:00:00Z";
   let recebidos = 0;
 
-  for (const entidade of ["etapa", "peixe", "pesca"]) {
+  for (const entidade of ["etapa", "peixe", "pescador", "pesca"]) {
     const tabela = TABELA[entidade];
     const registros = await chamar(
       `${tabela}?select=*&atualizada_em=gt.${encodeURIComponent(desde)}&order=atualizada_em.asc&limit=1000`
@@ -325,6 +335,9 @@ export function parar() {
 export async function reenviarTudo() {
   for (const e of estado.etapas) await db.enfileirar("upsert", "etapa", e);
   for (const p of estado.peixes) await db.enfileirar("upsert", "peixe", p);
+  for (const p of await db.listar(db.STORES.pescadores)) {
+    await db.enfileirar("upsert", "pescador", p);
+  }
   for (const p of estado.pescas) await db.enfileirar("upsert", "pesca", p);
   await atualizarContagemPendentes();
   return sincronizar();

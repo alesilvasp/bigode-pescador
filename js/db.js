@@ -10,12 +10,13 @@
 // =========================================================================
 
 const NOME_BANCO = "bigode-pescador";
-const VERSAO_BANCO = 1;
+const VERSAO_BANCO = 2;
 
 export const STORES = {
   etapas: "etapas",
   pescas: "pescas",
   peixes: "peixes",
+  pescadores: "pescadores",
   fotos: "fotos",
   outbox: "outbox", // fila de operações pendentes de sync
 };
@@ -42,6 +43,9 @@ export function abrirBanco() {
       }
       if (!db.objectStoreNames.contains(STORES.peixes)) {
         db.createObjectStore(STORES.peixes, { keyPath: "nome" });
+      }
+      if (!db.objectStoreNames.contains(STORES.pescadores)) {
+        db.createObjectStore(STORES.pescadores, { keyPath: "nome" });
       }
       if (!db.objectStoreNames.contains(STORES.fotos)) {
         db.createObjectStore(STORES.fotos, { keyPath: "id" });
@@ -150,7 +154,7 @@ export async function dataUrlParaBlob(dataUrl) {
  * Lê o localStorage direto em vez de importar sync.js, que importa este módulo.
  *
  * @param {"upsert"|"delete"} acao
- * @param {"etapa"|"pesca"|"peixe"} entidade
+ * @param {"etapa"|"pesca"|"peixe"|"pescador"} entidade
  */
 export async function enfileirar(acao, entidade, dados) {
   if (!syncConfigurado()) return;

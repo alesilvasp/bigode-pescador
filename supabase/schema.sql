@@ -41,6 +41,14 @@ create table if not exists public.peixes (
   atualizada_em timestamptz not null default now()
 );
 
+-- Os pescadores do campeonato. Ficam no banco para a lista ser a mesma em todos
+-- os aparelhos — quem for adicionado no PC aparece no celular de todo mundo.
+create table if not exists public.pescadores (
+  nome          text primary key,
+  removido      boolean not null default false,
+  atualizada_em timestamptz not null default now()
+);
+
 -- Cada peixe registrado por alguém.
 create table if not exists public.pescas (
   id            text primary key,
@@ -72,6 +80,7 @@ create index if not exists idx_etapas_atualizada on public.etapas (atualizada_em
 create index if not exists idx_peixes_atualizada on public.peixes (atualizada_em);
 create index if not exists idx_pescas_atualizada on public.pescas (atualizada_em);
 create index if not exists idx_pescas_etapa      on public.pescas (etapa_id);
+create index if not exists idx_pescadores_atualizada on public.pescadores (atualizada_em);
 
 
 -- ---- Segurança -----------------------------------------------------------
@@ -91,12 +100,13 @@ create index if not exists idx_pescas_etapa      on public.pescas (etapa_id);
 alter table public.etapas enable row level security;
 alter table public.peixes enable row level security;
 alter table public.pescas enable row level security;
+alter table public.pescadores enable row level security;
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['etapas', 'peixes', 'pescas'] loop
+  foreach t in array array['etapas', 'peixes', 'pescas', 'pescadores'] loop
     execute format('drop policy if exists "ler_%1$s"       on public.%1$I', t);
     execute format('drop policy if exists "inserir_%1$s"   on public.%1$I', t);
     execute format('drop policy if exists "atualizar_%1$s" on public.%1$I', t);
@@ -126,7 +136,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['etapas', 'peixes', 'pescas'] loop
+  foreach t in array array['etapas', 'peixes', 'pescas', 'pescadores'] loop
     execute format('drop trigger if exists trg_carimbo_%1$s on public.%1$I', t);
     execute format(
       'create trigger trg_carimbo_%1$s before update on public.%1$I
@@ -148,4 +158,15 @@ insert into public.peixes (nome, fator, modo, pontos_fixos, trofeu, penalidade) 
   ('Bagre',        2,    'formula', 0, false, false),  -- Rodrigo: "bagre - 2"
   ('Peixe Galo',  10,    'formula', 0, true,  false),  -- "super trunfo... 10 pontos"
   ('Baiacu',      -0.5,  'formula', 0, false, true)    -- "coloca baiacu menos 0,5"
+on conflict (nome) do nothing;
+
+
+-- ---- Pescadores iniciais -------------------------------------------------
+-- Os 4 do grupo. "on conflict do nothing" preserva edições feitas depois.
+
+insert into public.pescadores (nome) values
+  ('Luis Fellipe'),
+  ('Felipe Felix'),
+  ('Rodrigo Massi'),
+  ('Alex Sakaki')
 on conflict (nome) do nothing;
