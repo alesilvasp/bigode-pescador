@@ -66,7 +66,8 @@ export async function montarPacote({ estado, escopo = "tudo", etapaId = null, in
       encerrada: e.encerrada,
       ranking: montarRanking(
         pescas.filter((p) => p.etapaId === e.id),
-        estado.pescadores
+        estado.pescadores,
+        estado.ajustes
       ).map((r, i) => ({
         posicao: i + 1,
         pescador: r.nome,
@@ -261,7 +262,12 @@ export function placarEmTexto(etapa, ranking) {
     .filter((r) => r.qtd > 0)
     .forEach((r, i) => {
       const medalha = medalhas[i] || `${i + 1}º`;
-      linhas.push(`${medalha} ${r.nome} — ${r.pontos} pts (${r.qtd} ${r.qtd === 1 ? "peixe" : "peixes"})`);
+      // O bônus de espécies aparece separado: são pontos que não saem de peixe
+      // nenhum da lista, e sem essa nota o placar parece somado errado.
+      const bonus = r.bonus ? `, +${r.bonus} de bônus` : "";
+      linhas.push(
+        `${medalha} ${r.nome} — ${r.pontos} pts (${r.qtd} ${r.qtd === 1 ? "peixe" : "peixes"}${bonus})`
+      );
     });
 
   if (!ranking.some((r) => r.qtd > 0)) linhas.push("_Nenhuma pesca registrada ainda._");

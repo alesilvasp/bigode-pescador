@@ -178,13 +178,27 @@ function renderizarChipSync() {
   }
 }
 
+/**
+ * Selo do bônus de espécies, mostrado ao lado dos pontos.
+ *
+ * Sem isso o pescador vê 300 pontos que não saem de nenhum peixe do histórico e
+ * acha que o app somou errado.
+ */
+function chipBonus(stat) {
+  if (!stat.bonus) return "";
+  const vezes = stat.etapasComBonus > 1 ? ` ×${stat.etapasComBonus}` : "";
+  return `<span class="chip-bonus" title="Bônus por 5 espécies diferentes${vezes}">+${formatarNumero(
+    stat.bonus
+  )}</span>`;
+}
+
 // ---- Aba Campeonato --------------------------------------------------------
 
 export function renderizarRanking() {
   const etapa = etapaAtual();
   const corpo = $("#ranking-corpo");
   const pescas = etapa ? pescasDaEtapa(etapa.id) : [];
-  const ranking = montarRanking(pescas, estado.pescadores);
+  const ranking = montarRanking(pescas, estado.pescadores, estado.ajustes);
   const medalhas = ["🥇", "🥈", "🥉"];
 
   corpo.innerHTML = ranking
@@ -201,7 +215,10 @@ export function renderizarRanking() {
           <td class="numero">${s.qtd}</td>
           <td class="numero">${s.maior ? `${s.maior.toFixed(1).replace(".", ",")}` : "—"}</td>
           <td class="numero">${tem ? formatarPeso(s.pesoTotal) : "—"}</td>
-          <td class="numero ${s.pontos < 0 ? "pontos negativo" : "pontos"}">${formatarNumero(s.pontos)}</td>
+          <td class="numero ${s.pontos < 0 ? "pontos negativo" : "pontos"}">
+            ${formatarNumero(s.pontos)}
+            ${chipBonus(s)}
+          </td>
         </tr>`;
     })
     .join("");
@@ -277,7 +294,7 @@ function renderizarDegraus(etapas, todas) {
   }
 
   const pescas = todas.filter((p) => p.etapaId === etapa.id);
-  const colocados = montarRanking(pescas, estado.pescadores).filter((r) => r.qtd > 0);
+  const colocados = montarRanking(pescas, estado.pescadores, estado.ajustes).filter((r) => r.qtd > 0);
   const encerrada = !!etapa.encerrada;
 
   // O 1º sai no meio e mais alto; a ordem aqui é a de leitura (1º, 2º, 3º) e
@@ -294,6 +311,7 @@ function renderizarDegraus(etapas, todas) {
             <div class="degrau-pontos">${formatarNumero(r.pontos)}</div>
             <div class="degrau-sub">
               ${r.qtd} ${r.qtd === 1 ? "peixe" : "peixes"} · ${formatarPeso(r.pesoTotal)}
+              ${r.bonus ? `<br />${chipBonus(r)}` : ""}
             </div>
           </div>
           <div class="degrau-base">${i + 1}º</div>
@@ -348,7 +366,7 @@ function renderizarTitulos(etapas, todas) {
     return;
   }
 
-  const quadro = contarTitulos(etapas, todas, estado.pescadores).filter((x) => x.etapas > 0);
+  const quadro = contarTitulos(etapas, todas, estado.pescadores, estado.ajustes).filter((x) => x.etapas > 0);
   const lider = quadro[0];
   const soUmLider = !!lider && quadro.filter((x) => x.vitorias === lider.vitorias).length === 1;
 
@@ -481,7 +499,7 @@ export function renderizarGeral() {
   const etapas = etapasAtivas();
 
   // Ranking acumulado.
-  const ranking = montarRanking(todas, estado.pescadores);
+  const ranking = montarRanking(todas, estado.pescadores, estado.ajustes);
   const etapasPorPescador = new Map(
     estado.pescadores.map((nome) => [
       nome,
@@ -511,7 +529,7 @@ export function renderizarGeral() {
   $("#lista-etapas").innerHTML = etapas
     .map((e) => {
       const pescas = todas.filter((p) => p.etapaId === e.id);
-      const campeao = montarRanking(pescas, estado.pescadores)[0];
+      const campeao = montarRanking(pescas, estado.pescadores, estado.ajustes)[0];
       const atual = e.id === estado.etapaAtualId;
       return `
         <div class="item-etapa ${atual ? "atual" : ""}" data-etapa="${esc(e.id)}">
@@ -604,7 +622,7 @@ export function preencherSelectPeixes(valorSelecionado) {
     a.nome.localeCompare(b.nome, "pt-BR");
 
   const opcao = (p) => {
-    const detalhe = p.modo === "fixa" ? `${p.pontosFixos} pts fixos` : `fator ${p.fator}`;
+    const detalhe = p.modo === "fixa" ? `${p.pontosFixos} pts fixos` : `${p.fator} pts`;
     const marca = p.trofeu ? "🏆 " : p.penalidade ? "⚠️ " : "";
     return `<option value="${esc(p.nome)}">${marca}${esc(p.nome)} (${esc(detalhe)})</option>`;
   };

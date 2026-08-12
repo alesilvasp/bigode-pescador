@@ -82,7 +82,7 @@ function renderizarPeixes() {
       const detalhe =
         p.modo === "fixa"
           ? `<span class="peixe-fixa">${esc(p.pontosFixos)} pts fixos</span>`
-          : `<span class="peixe-fator">fator ${esc(p.fator)}</span>`;
+          : `<span class="peixe-fator">espécie ${esc(p.fator)}</span>`;
       const marca = p.trofeu ? "🏆" : p.penalidade ? "⚠️" : "🐟";
       // Nome científico e comprimento máximo vêm da tabela oficial do Rodrigo e
       // servem para identificar o bicho — é o que a tabela existe para resolver.
@@ -112,18 +112,25 @@ function renderizarFormula() {
   atualizarSimulacao();
 }
 
-/** Mostra o efeito da calibragem usando o caso que o Rodrigo deu no grupo. */
+// O caso de referência é o EXEMPLO DE CÁLCULO da tabela oficial: Robalo Flecha
+// de 72 cm e 4.300 g dá 415 pontos. Com os multiplicadores em 1, o simulador
+// tem que mostrar exatamente isso — se mostrar outro número, a calibragem saiu
+// da regra do Rodrigo.
+const SIMULACAO = { peixe: { nome: "Robalo Flecha", fator: 300, modo: "formula" }, peso: 4300, tamanho: 72 };
+
+/** Mostra o efeito da calibragem usando o exemplo da tabela oficial. */
 function atualizarSimulacao() {
   const ajustes = {
+    ...estado.ajustes,
     multiplicadorPeso: parseFloat($("#ajuste-mult-peso").value) || 0,
     multiplicadorTamanho: parseFloat($("#ajuste-mult-tamanho").value) || 0,
   };
-  const robalo = { nome: "Robalo", fator: 5, modo: "formula" };
+  const { peixe, peso, tamanho } = SIMULACAO;
 
   $("#simulacao-resultado").textContent = new Intl.NumberFormat("pt-BR").format(
-    calcularPontuacao(robalo, 100, 45, ajustes)
+    calcularPontuacao(peixe, peso, tamanho, ajustes)
   );
-  $("#simulacao-conta").textContent = explicarPontuacao(robalo, 100, 45, ajustes);
+  $("#simulacao-conta").textContent = explicarPontuacao(peixe, peso, tamanho, ajustes);
 }
 
 function renderizarSync() {
@@ -506,7 +513,7 @@ async function compartilharPlacar() {
   }
 
   const pescas = estado.pescas.filter((p) => p.etapaId === etapa.id && !p.removida);
-  const texto = exportar.placarEmTexto(etapa, montarRanking(pescas, estado.pescadores));
+  const texto = exportar.placarEmTexto(etapa, montarRanking(pescas, estado.pescadores, estado.ajustes));
   const r = await exportar.compartilhar(texto);
 
   const mensagens = {

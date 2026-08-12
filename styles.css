@@ -374,6 +374,20 @@ body.travado { overflow: hidden; }
 .pontos { font-weight: 800; color: var(--ciano); }
 .pontos.negativo { color: var(--vermelho); }
 .medalha { margin-right: 3px; }
+/* Selo do bônus de 5 espécies: pontos que não vêm de peixe nenhum da lista. */
+.chip-bonus {
+  display: inline-block;
+  background: rgba(74, 217, 145, 0.16);
+  border: 1px solid rgba(74, 217, 145, 0.4);
+  color: var(--verde);
+  border-radius: 999px;
+  padding: 0 6px;
+  margin-left: 5px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
 tr.lider td { background: rgba(244, 197, 66, 0.08); }
 /* Marca a própria linha só na borda esquerda — em todas as td viraria
    uma grade de listras verticais. */

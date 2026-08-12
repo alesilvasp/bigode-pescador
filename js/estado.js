@@ -8,6 +8,7 @@
 import {
   AJUSTES_PADRAO,
   CHAVES,
+  ESCALA_ANTIGA,
   PEIXES_PADRAO,
   PESCADORES_PADRAO,
   novoId,
@@ -113,6 +114,7 @@ export async function carregar() {
   estado.etapaAtualId = lerLocal(CHAVES.etapaAtual, null);
 
   await garantirPeixesPadrao();
+  await migrarEscalaDePontos();
   await garantirPescadores();
   await migrarDaV1();
 
@@ -200,6 +202,70 @@ async function garantirPeixesPadrao() {
 
   if (faltando.length) await db.putVarios(db.STORES.peixes, faltando);
   if (completar.length) await db.putVarios(db.STORES.peixes, completar);
+}
+
+/**
+ * Migra a escala de pontos das espécies (12/08/2026).
+ *
+ * A regra virou `pontos da espécie + comprimento + peso÷100`, e com ela os
+ * valores saíram das unidades (5, 4, 2) para as centenas (300, 200, 100). O
+ * problema é o BANCO: ele guarda os números antigos, e registro do servidor
+ * vence padrão semeado localmente. Sem esta migração, o sync devolveria
+ * `fator: 5` para o Robalo e um peixe de 1,5 kg valeria `5 + 51 + 15 = 71`
+ * pontos em vez de 366 — placar errado para o grupo inteiro, sem erro na tela.
+ *
+ * Por isso aqui o carimbo é NOVO (ao contrário de `CARIMBO_SEED`) e a mudança
+ * é **enfileirada**: o primeiro aparelho que abrir a versão nova corrige o
+ * banco, e os outros baixam já certo. Não precisa de SQL.
+ *
+ * Só troca quem está EXATAMENTE no valor antigo. Fator que o grupo ajustou na
+ * tela é decisão deles e fica de pé. Roda uma vez por aparelho: sem a marca, um
+ * valor que o grupo voltasse a 5 de propósito seria reescrito a cada abertura.
+ */
+async function migrarEscalaDePontos() {
+  if (lerLocal(CHAVES.escalaPontos, false)) return;
+
+  const padraoPorNome = new Map(PEIXES_PADRAO.map((p) => [p.nome, p]));
+  const mudados = [];
+
+  for (const peixe of await db.listar(db.STORES.peixes)) {
+    const valorAntigo = ESCALA_ANTIGA[peixe.nome];
+    const padrao = padraoPorNome.get(peixe.nome);
+    if (valorAntigo === undefined || !padrao) continue; // espécie sem escala antiga
+    if (Number(peixe.fator) !== valorAntigo) continue; // editado pelo grupo: respeita
+
+    mudados.push({
+      ...peixe,
+      fator: padrao.fator,
+      modo: padrao.modo,
+      pontosFixos: padrao.pontosFixos ?? peixe.pontosFixos ?? 0,
+      atualizadaEm: new Date().toISOString(),
+    });
+  }
+
+  if (mudados.length) {
+    console.info(`[migração] escala de pontos: ${mudados.length} espécies atualizadas`);
+    await db.putVarios(db.STORES.peixes, mudados);
+    for (const p of mudados) await db.enfileirar("upsert", "peixe", p);
+  }
+
+  // Cada pesca guarda a pontuação como SNAPSHOT. Sem recalcular aqui, o placar
+  // continuaria exibindo os números da fórmula antiga — a etapa do 1º semestre
+  // mostraria 12.795 pontos para quem, na regra nova, fez 2.112. Recalcular no
+  // boot é o mesmo que a tela de Ajustes já faz ao mexer na calibragem:
+  // campeonato inteiro sob a mesma régua.
+  const mapaPeixesAgora = new Map((await db.listar(db.STORES.peixes)).map((p) => [p.nome, p]));
+  const pescas = await db.listar(db.STORES.pescas);
+  const recalculadas = recalcularTodas(pescas, mapaPeixesAgora, estado.ajustes);
+  const pescasMudadas = recalculadas.filter((p, i) => p !== pescas[i]);
+
+  if (pescasMudadas.length) {
+    console.info(`[migração] ${pescasMudadas.length} pescas recalculadas pela regra nova`);
+    await db.putVarios(db.STORES.pescas, pescasMudadas);
+    for (const p of pescasMudadas) await db.enfileirar("upsert", "pesca", p);
+  }
+
+  gravarLocal(CHAVES.escalaPontos, true);
 }
 
 /**

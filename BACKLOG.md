@@ -30,7 +30,12 @@ Também entraram, fora da lista original:
   nome científico e comprimento máximo (a lista foi de 8 para 34 peixes). O
   comprimento máximo vira a **régua do formulário por espécie**: garoupa vai a
   150 cm, carapeba a 50, e continua sem cortar quem digita mais que isso. Os
-  fatores saem da faixa de valor da tabela — ver as três dúvidas abertas abaixo.
+  pontos de cada espécie saem da faixa de valor da tabela — ver a pendência abaixo.
+- **Fórmula oficial nova** (12/08/2026) — `pontos da espécie + comprimento(cm)
+  + peso(g) ÷ 100`, com **bônus de +300** por cinco espécies diferentes na etapa
+  e **baiacu −100** fixo por exemplar. Substituiu `fator × peso + fator ×
+  tamanho`, em que o peso era 98% da nota. O app migra a escala e recalcula as
+  pescas já registradas sozinho, sem precisar de SQL.
 - **Aba Pódio** — o resultado fechado do campeonato: pódio em degraus da última
   etapa com resultado (coroa para o campeão de etapa encerrada, "liderando
   agora" enquanto está aberta) e o **quadro de títulos**, que aparece com duas
@@ -130,25 +135,42 @@ corrigidos**, testes de 31 → 48. Detalhe técnico de cada um está nas
 
 ## Pendências com o grupo (não são código)
 
-### 🎣 Aberta: três dúvidas da tabela oficial das espécies
+### 🎣 Aberta: quanto vale cada espécie na fórmula nova
 
-O Rodrigo mandou em 12/08/2026 a **tabela oficial das 32 espécies**, com nome
-científico, comprimento máximo e faixa de valor por cor. Ela já está no app (34
-peixes, com o comprimento máximo virando a régua do formulário por espécie). O
-que ela **não** traz é número de fator, e três pontos ficaram em aberto:
+A tabela de pontuação que o Rodrigo mandou em 12/08/2026 traz a **fórmula**
+(`pontos da espécie + comprimento + peso ÷ 100`), o **bônus** de +300 por cinco
+espécies e a **penalidade** de −100 no baiacu. Tudo isso já está no app.
 
-1. **Pescada é 5 ou 4?** Ele disse *"mesmo peso de caranha e pescada e robalo"*,
-   o que dá 5. A tabela pinta a Pescada como **Médio Valor**, faixa que
-   corresponde a 4. Está valendo **5**, porque fala é mais específica que cor.
-2. **Peixe Galo continua 10?** É o "super trunfo" (*"colocaria 10 pontos"*), mas
-   na tabela ele aparece só como Alto Valor, junto do robalo, que é 5. Está
-   valendo **10**.
-3. **A faixa "Valor Padrão" (azul claro) existe para quê?** Está na legenda, mas
-   **nenhuma das 32 espécies** usa essa cor. Ou é faixa sobrando, ou algum peixe
-   deveria estar nela — e nesse caso falta saber qual fator ela vale.
+O que ela **não** traz é quanto vale cada espécie. Existe **uma** âncora oficial,
+no exemplo de cálculo: **Robalo Flecha = 300**. O resto da escala está derivado
+das faixas de cor da primeira tabela e **precisa de confirmação**:
 
-Confirmado o que ele responder, é trocar número no `js/config.js` (cada fator
-tem a fonte em comentário) e ajustar o teste correspondente.
+| Faixa | Espécies | Pontos no app |
+|---|---|---:|
+| Alto valor esportivo | robalo (e as duas espécies), caranha, traíra, garoupa, badejo, linguado, anchova, olhete, tucunaré | **300** ✅ âncora |
+| Médio valor | xaréu, cioba, bonito, pescada amarela, pampo, vermelho, serra, jundiá | **200** ❓ |
+| Valor padrão (cards 19–23) | sororoca, corvina, sargo, carapeba | **100** ❓ |
+| Bagres e menor valor | tainha, os 4 bagres, mandi, parati | **50** ❓ |
+| Penalidade | baiacu | **−100** ✅ oficial |
+
+Duas espécies fogem da faixa de propósito, porque **fala do Rodrigo vence cor**:
+
+- **Pescada = 300**, e não 100, porque ele disse *"mesmo peso de caranha e
+  pescada e robalo"*. A cor da tabela a coloca em Valor Padrão.
+- **Peixe Galo = 600**, o dobro do robalo, mantendo a proporção do "super
+  trunfo" (*"colocaria 10 pontos"*, contra 5 do robalo). A tabela nova não tem
+  faixa de super trunfo.
+
+Confirmado, é trocar número no `js/config.js` e o teste correspondente. Enquanto
+não vier, o grupo pode calibrar direto em **Ajustes → Peixes e pontos**.
+
+### ✅ Respondida: a faixa "Valor Padrão" (azul claro)
+
+Era dúvida na primeira tabela — a legenda tinha a faixa e nenhuma espécie parecia
+usá-la. O **Alex** respondeu em 12/08: *"Os de azul claro é bem pouca diferença de
+cor. Mas são os do 19 ao 23"* — sororoca, corvina, pescada, sargo e carapeba. A
+medição de cor não separava esses tons do azul médio, então essa resposta foi o
+que fechou a classificação das 32 espécies.
 
 ### ⚖️ Aberta: o peso dominar é intencional?
 

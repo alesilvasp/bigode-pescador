@@ -46,12 +46,27 @@ grava no IndexedDB, enfileira para sync e avisa a interface pelo `aoMudar()`.
 ### Pontuação — definida pelo Rodrigo no grupo, não pelo código
 
 ```
-pontuação = fator × peso(gramas) + fator × tamanho(cm)
+pontuação = pontos da espécie + comprimento(cm) + peso(g) ÷ 100
 ```
 
-Caso âncora, que está em `tests/pontuacao.test.js`:
-**Robalo (fator 5), 100 g, 45 cm = 725 pontos.** Se esse teste quebrar, a regra
-do campeonato mudou — confirme com o Rodrigo antes de ajustar o teste.
+Mais duas regras que vêm com ela:
+
+- **Bônus:** quem pegar **5 espécies diferentes** numa etapa leva **+300**.
+- **Penalidade:** cada **baiacu** tira **100** pontos (pontuação fixa).
+
+Caso âncora, que está em `tests/pontuacao.test.js` e é o exemplo impresso na
+tabela oficial: **Robalo Flecha, 72 cm, 4.300 g = 415 pontos** (300 + 72 + 43).
+Se esse teste quebrar, a regra do campeonato mudou — confirme com o Rodrigo
+antes de ajustar o teste.
+
+> ⚠️ **Isto substituiu `fator × peso + fator × tamanho`**, que valeu até
+> 11/08/2026. A regra velha fazia o peso ser **98%** da nota: peixe curto e
+> gordo ganhava de robalo comprido, e foi o que o Alex apontou no grupo. Na
+> fórmula nova o mesmo robalo de 4,3 kg fica 72% espécie, 17% comprimento, 10%
+> peso. Há teste guardando esse equilíbrio.
+
+O campo que guarda os pontos da espécie continua chamando `fator`, porque
+renomear exigiria coluna nova no banco — e SQL só o Alex roda.
 
 **Cada fator tem fonte registrada em comentário no `config.js`** — a fala do
 Rodrigo ou do Alex que o originou. Não altere sem falar com o Rodrigo; ele é a
@@ -266,7 +281,21 @@ quando o registro volta do servidor.
     `npx http-server . -p 5003 -c-1`, que manda `no-store`. Cuidado para não
     confundir com o cache do service worker, que é cache-first por versão: se a
     `VERSAO` não subiu, ele também serve arquivo velho.
-22. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+22. **Mudar a régua exige migrar o BANCO, não só o `config.js`.** Quando a
+    escala virou centenas (12/08/2026), o banco continuou com `fator: 5` no
+    Robalo — e registro do servidor vence padrão semeado local, então o sync
+    devolvia 5 e o peixe de 1,5 kg valia `5 + 51 + 15 = 71` em vez de 366.
+    `migrarEscalaDePontos()` resolve sem SQL: troca só quem está **exatamente**
+    no valor antigo (`ESCALA_ANTIGA`), usa carimbo NOVO — ao contrário do
+    `CARIMBO_SEED` — e **enfileira**, então o primeiro aparelho que abrir a
+    versão nova corrige o banco para todos. Fator que o grupo editou na tela
+    fica de pé.
+23. **Pontuação de pesca é SNAPSHOT: mudar a fórmula não recalcula sozinho.**
+    Cada pesca guarda o número, e o ranking só soma. Sem recalcular, a etapa do
+    1º semestre continuaria mostrando 12.795 pontos para quem, na regra nova,
+    fez 2.112. Quem muda regra em release tem que rodar `recalcularTodas()` na
+    migração — é o que a tela de Ajustes já faz ao mexer na calibragem.
+24. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.
