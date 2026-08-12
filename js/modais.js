@@ -17,6 +17,7 @@ import {
   peixePorNome,
   removerEtapa,
   removerPesca,
+  removerPeixe,
   salvarPeixe,
 } from "./estado.js";
 import { calcularPontuacao, explicarPontuacao } from "./pontuacao.js";
@@ -150,6 +151,8 @@ export async function abrirModalPesca(pesca = null) {
   sincronizarToggleUnidade();
   atualizarModoMedidas();
   atualizarPreviewPontuacao();
+  // Remover só existe editando: no cadastro não há o que remover.
+  $("#btn-pesca-remover").classList.toggle("oculto", !pesca);
   abrir("#modal-pesca");
 
   // Foco no peixe: pescador quase sempre já está certo.
@@ -263,6 +266,15 @@ function atualizarPreviewPontuacao() {
 export function iniciarModalPesca() {
   $("#btn-adicionar").addEventListener("click", () => abrirModalPesca());
   $("#btn-cancelar").addEventListener("click", () => fecharModalPesca());
+
+  $("#btn-pesca-remover").addEventListener("click", async () => {
+    const pesca = pescaEmEdicao;
+    if (!pesca) return;
+    if (!confirm(`Remover ${pesca.tipo} de ${pesca.pescador}?`)) return;
+    await removerPesca(pesca.id);
+    fecharModalPesca();
+    toast("Pesca removida.");
+  });
 
   $("#modal-pesca").addEventListener("click", (e) => {
     if (e.target.id === "modal-pesca") fecharModalPesca();
@@ -494,6 +506,10 @@ export function abrirModalPeixe(peixe = null) {
   $("#campo-peixe-fator").value = peixe?.fator ?? 1;
   $("#campo-peixe-fixos").value = peixe?.pontosFixos ?? 0;
   alternarCamposPeixe();
+  // "Remover" só faz sentido editando um peixe que existe. Ele mora aqui, e não
+  // na lista: com 34 espécies, um botão de remover por linha virava um paredão
+  // de links vermelhos — e no celular ficava cortado fora da tela.
+  $("#btn-peixe-remover").classList.toggle("oculto", !peixe);
   abrir("#modal-peixe");
 }
 
@@ -506,6 +522,19 @@ function alternarCamposPeixe() {
 export function iniciarModalPeixe() {
   $("#campo-peixe-modo").addEventListener("change", alternarCamposPeixe);
   $("#btn-peixe-cancelar").addEventListener("click", () => fechar("#modal-peixe"));
+
+  $("#btn-peixe-remover").addEventListener("click", async () => {
+    const peixe = peixeEmEdicao;
+    if (!peixe) return;
+    const usos = estado.pescas.filter((p) => p.tipo === peixe.nome && !p.removida).length;
+    const aviso = usos
+      ? `${peixe.nome} está em ${usos} ${usos === 1 ? "pesca" : "pescas"}. Elas continuam salvas com a pontuação atual. Tirar da lista?`
+      : `Tirar ${peixe.nome} da lista de peixes?`;
+    if (!confirm(aviso)) return;
+    await removerPeixe(peixe.nome);
+    fechar("#modal-peixe");
+    toast("Peixe removido da lista.");
+  });
   $("#modal-peixe").addEventListener("click", (e) => {
     if (e.target.id === "modal-peixe") fechar("#modal-peixe");
   });
@@ -627,24 +656,19 @@ export function iniciarEventosGlobais() {
 
   // Histórico: editar, remover e ampliar foto.
   $("#historico-lista").addEventListener("click", async (e) => {
-    const editar = e.target.closest("[data-editar]");
-    if (editar) {
-      const pesca = estado.pescas.find((p) => p.id === editar.dataset.editar);
-      if (pesca) abrirModalPesca(pesca);
-      return;
-    }
-
-    const remover = e.target.closest("[data-remover]");
-    if (remover) {
-      const pesca = estado.pescas.find((p) => p.id === remover.dataset.remover);
-      if (!pesca) return;
-      if (!confirm(`Remover ${pesca.tipo} de ${pesca.pescador}?`)) return;
-      await removerPesca(pesca.id);
-      toast("Pesca removida.");
-      return;
-    }
-
+    // A foto vem primeiro: ela fica DENTRO do card, e o card inteiro abre a
+    // edição. Sem checar antes, tocar na foto abriria o formulário em vez de
+    // ampliar a imagem.
     const foto = e.target.closest("[data-foto]");
+    if (!foto) {
+      const editar = e.target.closest("[data-editar]");
+      if (editar) {
+        const pesca = estado.pescas.find((p) => p.id === editar.dataset.editar);
+        if (pesca) abrirModalPesca(pesca);
+        return;
+      }
+    }
+
     if (foto) {
       const pesca = estado.pescas.find((p) => p.id === foto.dataset.foto);
       await abrirLightbox(pesca?.fotoId);

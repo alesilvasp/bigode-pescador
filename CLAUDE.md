@@ -323,7 +323,18 @@ quando o registro volta do servidor.
     placar de todos. Recalculando na chegada, o estrago não se espalha. Peixe
     que o aparelho não conhece mantém o número original: recalcular sem a
     espécie na lista daria zero e apagaria a pesca do placar.
-27. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+27. **Nada de `<table>` para dados do campeonato.** Seis colunas não cabem num
+    celular de 390 px: a tabela ganhava rolagem horizontal e a coluna de PONTOS,
+    a única que importa, ficava fora da tela. Ranking, geral e títulos são
+    listas de cartões (`.placar`), com nome e pontos na mesma linha. Medido: 130
+    elementos estouravam a largura antes, zero depois.
+28. **Ação destrutiva mora dentro do modal, não na lista.** Um "remover" por
+    linha, em 34 espécies e em cada pesca do histórico, virava paredão de links
+    vermelhos e empurrava o texto para três linhas. Hoje o item inteiro abre a
+    edição e o "Remover" fica lá dentro. No histórico, o clique na foto é
+    checado ANTES do clique do card — senão tocar na foto abriria o formulário
+    em vez de ampliar a imagem.
+29. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.

@@ -70,21 +70,7 @@
   <section id="aba-campeonato" class="painel-aba" role="tabpanel">
     <div id="destaque-lider" class="destaque oculto"></div>
 
-    <div class="tabela-wrapper">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Pescador</th>
-            <th scope="col" class="numero">Pescas</th>
-            <th scope="col" class="numero">Maior</th>
-            <th scope="col" class="numero">Peso</th>
-            <th scope="col" class="numero">Pontos</th>
-          </tr>
-        </thead>
-        <tbody id="ranking-corpo"></tbody>
-      </table>
-    </div>
+    <ol id="ranking-corpo" class="placar"></ol>
 
     <div class="acoes-etapa">
       <button id="btn-compartilhar" class="btn btn-secundario btn-pequeno">📤 Compartilhar placar</button>
@@ -117,20 +103,7 @@
     <h2 class="titulo-secao">Classificação geral</h2>
     <p class="ajuda">Soma de todas as etapas.</p>
 
-    <div class="tabela-wrapper">
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Pescador</th>
-            <th scope="col" class="numero">Etapas</th>
-            <th scope="col" class="numero">Pescas</th>
-            <th scope="col" class="numero">Pontos</th>
-          </tr>
-        </thead>
-        <tbody id="geral-corpo"></tbody>
-      </table>
-    </div>
+    <ol id="geral-corpo" class="placar"></ol>
 
     <h2 class="titulo-secao">Etapas</h2>
     <div id="lista-etapas" class="lista-etapas"></div>
@@ -335,14 +308,22 @@
         </div>
       </div>
 
-      <label class="campo-foto">
-        Foto <span class="opcional">(opcional)</span>
-        <input id="campo-foto" type="file" accept="image/*" capture="environment" />
+      <div class="campo-foto">
+        <label for="campo-foto" class="rotulo-foto">
+          Foto <span class="opcional">(opcional)</span>
+        </label>
+        <!-- O input nativo fica escondido: "Escolher arquivo / Nenhum arquivo
+             escolhido" é a cara do navegador, não do app. O label estilizado
+             abre a câmera do mesmo jeito. -->
+        <input id="campo-foto" type="file" accept="image/*" capture="environment" class="input-foto" />
+        <label for="campo-foto" class="botao-foto">
+          <span aria-hidden="true">📷</span> Tirar foto do peixe
+        </label>
         <div id="foto-preview" class="foto-preview oculto">
           <img id="foto-preview-img" alt="Prévia da foto do peixe" />
           <button type="button" id="btn-remover-foto" class="btn-remover-foto">remover</button>
         </div>
-      </label>
+      </div>
 
       <p class="preview">
         Pontuação: <strong id="preview-pontuacao">0</strong>
@@ -353,6 +334,9 @@
         <button type="button" id="btn-cancelar" class="btn btn-secundario">Cancelar</button>
         <button type="submit" class="btn btn-primario">Salvar</button>
       </div>
+      <button type="button" id="btn-pesca-remover" class="btn-remover-item oculto">
+        Remover esta pesca
+      </button>
     </form>
   </div>
 </div>
@@ -426,6 +410,9 @@
         <button type="button" id="btn-peixe-cancelar" class="btn btn-secundario">Cancelar</button>
         <button type="submit" class="btn btn-primario">Salvar</button>
       </div>
+      <button type="button" id="btn-peixe-remover" class="btn-remover-item oculto">
+        Remover este peixe da lista
+      </button>
     </form>
   </div>
 </div>

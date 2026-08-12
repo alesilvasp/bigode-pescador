@@ -82,27 +82,27 @@ function renderizarPeixes() {
     .map((p) => {
       const detalhe =
         p.modo === "fixa"
-          ? `<span class="peixe-fixa">${esc(p.pontosFixos)} pts fixos</span>`
-          : `<span class="peixe-fator">espécie ${esc(p.fator)}</span>`;
+          ? `<span class="peixe-fixa">${esc(p.pontosFixos)} fixos</span>`
+          : `<span class="peixe-fator">${esc(p.fator)} pts</span>`;
       const marca = p.trofeu ? "🏆" : p.penalidade ? "⚠️" : "🐟";
       // Nome científico e comprimento máximo vêm da tabela oficial do Rodrigo e
       // servem para identificar o bicho — é o que a tabela existe para resolver.
       const ficha = [p.cientifico, p.tamanhoMaximo ? `até ${p.tamanhoMaximo} cm` : ""]
         .filter(Boolean)
         .join(" · ");
+      // O item inteiro abre a edição, e o "remover" mora lá dentro. São 34
+      // espécies: com dois botões em cada linha, a tela virava um paredão de
+      // links — e no celular eles ainda ficavam cortados fora da tela.
       return `
-        <div class="item-peixe">
+        <button type="button" class="item-peixe" data-editar-peixe="${esc(p.nome)}">
           <span class="peixe-icone">${marca}</span>
-          <span class="peixe-nome">
-            ${esc(p.nome)}
+          <span class="peixe-corpo">
+            <span class="peixe-nome">${esc(p.nome)}</span>
             ${ficha ? `<span class="peixe-ficha">${esc(ficha)}</span>` : ""}
           </span>
           ${detalhe}
-          <span class="item-peixe-acoes">
-            <button class="link-acao" data-editar-peixe="${esc(p.nome)}">editar</button>
-            <button class="link-acao perigo" data-remover-peixe="${esc(p.nome)}">remover</button>
-          </span>
-        </div>`;
+          <span class="peixe-seta" aria-hidden="true">›</span>
+        </button>`;
     })
     .join("");
 }

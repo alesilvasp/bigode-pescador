@@ -194,32 +194,55 @@ function chipBonus(stat) {
 
 // ---- Aba Campeonato --------------------------------------------------------
 
+/**
+ * Uma linha do placar.
+ *
+ * Era `<table>` com seis colunas, e num celular de 390 px a coluna de PONTOS —
+ * a única que importa de verdade — ficava fora da tela, atrás de uma rolagem
+ * horizontal. Agora cada pescador é um cartão: nome e pontos na linha de cima,
+ * o detalhe embaixo, em texto pequeno.
+ */
+function linhaDoPlacar(s, i, detalhe) {
+  const medalhas = ["🥇", "🥈", "🥉"];
+  const tem = s.qtd > 0;
+  const classes = [
+    "linha-placar",
+    tem && i === 0 ? "lider" : "",
+    s.nome === estado.eu ? "eu" : "",
+    !tem ? "sem-pesca" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `
+    <li class="${classes}">
+      <span class="posicao">${tem && i < 3 ? medalhas[i] : `${i + 1}º`}</span>
+      <span class="placar-info">
+        <span class="placar-nome">${esc(s.nome)}</span>
+        <span class="placar-detalhe">${detalhe}</span>
+      </span>
+      <span class="placar-pontos ${s.pontos < 0 ? "negativo" : ""}">
+        ${formatarNumero(s.pontos)}
+        ${chipBonus(s)}
+      </span>
+    </li>`;
+}
+
 export function renderizarRanking() {
   const etapa = etapaAtual();
-  const corpo = $("#ranking-corpo");
   const pescas = etapa ? pescasDaEtapa(etapa.id) : [];
   const ranking = montarRanking(pescas, estado.pescadores, estado.ajustes);
-  const medalhas = ["🥇", "🥈", "🥉"];
 
-  corpo.innerHTML = ranking
+  $("#ranking-corpo").innerHTML = ranking
     .map((s, i) => {
-      const tem = s.qtd > 0;
-      const medalha = tem && i < 3 ? medalhas[i] : "";
-      const classes = [tem && i === 0 ? "lider" : "", s.nome === estado.eu ? "sou-eu" : ""]
-        .filter(Boolean)
-        .join(" ");
-      return `
-        <tr class="${classes}">
-          <td class="numero"><span class="medalha">${medalha}</span>${i + 1}</td>
-          <td class="nome-pescador">${esc(s.nome)}</td>
-          <td class="numero">${s.qtd}</td>
-          <td class="numero">${s.maior ? `${s.maior.toFixed(1).replace(".", ",")}` : "—"}</td>
-          <td class="numero">${tem ? formatarPeso(s.pesoTotal) : "—"}</td>
-          <td class="numero ${s.pontos < 0 ? "pontos negativo" : "pontos"}">
-            ${formatarNumero(s.pontos)}
-            ${chipBonus(s)}
-          </td>
-        </tr>`;
+      const partes = s.qtd
+        ? [
+            `${s.qtd} ${s.qtd === 1 ? "peixe" : "peixes"}`,
+            formatarPeso(s.pesoTotal),
+            s.maior ? `maior ${String(s.maior).replace(".", ",")} cm` : "",
+          ]
+        : ["ainda não pescou"];
+      return linhaDoPlacar(s, i, esc(partes.filter(Boolean).join(" · ")));
     })
     .join("");
 
@@ -370,23 +393,32 @@ function renderizarTitulos(etapas, todas) {
   const lider = quadro[0];
   const soUmLider = !!lider && quadro.filter((x) => x.vitorias === lider.vitorias).length === 1;
 
+  // Cada pescador é uma linha com as medalhas ao lado do nome. A tabela de seis
+  // colunas que existia aqui não cabia em celular — sumia justamente a coluna
+  // de pontos.
   const linhas = quadro
-    .map(
-      (x, i) => `
-      <tr class="${[i === 0 && x.vitorias > 0 ? "lider" : "", x.nome === estado.eu ? "sou-eu" : ""]
+    .map((x, i) => {
+      const medalhas = [
+        x.vitorias ? `<span class="conta-medalha">🥇 ${x.vitorias}</span>` : "",
+        x.segundos ? `<span class="conta-medalha">🥈 ${x.segundos}</span>` : "",
+        x.terceiros ? `<span class="conta-medalha">🥉 ${x.terceiros}</span>` : "",
+      ]
         .filter(Boolean)
-        .join(" ")}">
-        <td class="numero">${i + 1}</td>
-        <td class="nome-pescador">
-          ${esc(x.nome)}
-          ${x.ganhas.length ? `<span class="ganhas">${esc(x.ganhas.join(" · "))}</span>` : ""}
-        </td>
-        <td class="numero">${x.vitorias || "—"}</td>
-        <td class="numero">${x.segundos || "—"}</td>
-        <td class="numero">${x.terceiros || "—"}</td>
-        <td class="numero ${x.pontos < 0 ? "pontos negativo" : "pontos"}">${formatarNumero(x.pontos)}</td>
-      </tr>`
-    )
+        .join("");
+
+      return `
+        <li class="linha-placar ${i === 0 && x.vitorias > 0 ? "lider" : ""} ${
+          x.nome === estado.eu ? "eu" : ""
+        }">
+          <span class="posicao">${i + 1}º</span>
+          <span class="placar-info">
+            <span class="placar-nome">${esc(x.nome)}</span>
+            <span class="placar-detalhe medalhas">${medalhas || "sem pódio ainda"}</span>
+            ${x.ganhas.length ? `<span class="ganhas">${esc(x.ganhas.join(" · "))}</span>` : ""}
+          </span>
+          <span class="placar-pontos ${x.pontos < 0 ? "negativo" : ""}">${formatarNumero(x.pontos)}</span>
+        </li>`;
+    })
     .join("");
 
   box.innerHTML = `
@@ -405,21 +437,7 @@ function renderizarTitulos(etapas, todas) {
            </div>`
         : ""
     }
-    <div class="tabela-wrapper">
-      <table class="tabela tabela-titulos">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Pescador</th>
-            <th scope="col" class="numero medalha-col"><abbr title="Vitórias">🥇</abbr></th>
-            <th scope="col" class="numero medalha-col"><abbr title="Segundos lugares">🥈</abbr></th>
-            <th scope="col" class="numero medalha-col"><abbr title="Terceiros lugares">🥉</abbr></th>
-            <th scope="col" class="numero">Pontos</th>
-          </tr>
-        </thead>
-        <tbody>${linhas}</tbody>
-      </table>
-    </div>`;
+    <ol class="placar">${linhas}</ol>`;
 }
 
 // ---- Aba Histórico ---------------------------------------------------------
@@ -446,21 +464,21 @@ export async function renderizarHistorico() {
         p.modo === "fixa"
           ? "pontuação fixa"
           : `${String(p.tamanho).replace(".", ",")} cm · ${formatarPeso(p.pesoGramas)}`;
+      // O card inteiro abre a edição — o "remover" mora lá dentro. Dois links em
+      // cada card empurravam o texto e faziam "Rodrigo Massi · 34 cm · 415 g"
+      // quebrar em três linhas no celular.
       return `
-        <div class="card" data-pesca="${esc(p.id)}">
+        <div class="card" data-editar="${esc(p.id)}" role="button" tabindex="0">
           <div class="card-foto placeholder" data-slot-foto="${esc(p.id)}">🐟</div>
           <div class="card-info">
             <div class="card-titulo">${esc(p.tipo)}</div>
-            <div class="card-sub">${esc(p.pescador)} · ${esc(medida)}</div>
-            <div class="card-data">${esc(formatarData(p.data))}</div>
+            <div class="card-sub">${esc(p.pescador)}</div>
+            <div class="card-data">${esc(medida)} · ${esc(formatarData(p.data))}</div>
           </div>
           <div class="card-lado">
             <div class="${cls}">${formatarNumero(p.pontuacao)}</div>
-            <div class="card-botoes">
-              <button class="link-acao" data-editar="${esc(p.id)}" aria-label="Editar">editar</button>
-              <button class="link-acao perigo" data-remover="${esc(p.id)}" aria-label="Remover">remover</button>
-            </div>
           </div>
+          <span class="card-seta" aria-hidden="true">›</span>
         </div>`;
     })
     .join("");
@@ -506,22 +524,17 @@ export function renderizarGeral() {
       new Set(todas.filter((p) => p.pescador === nome).map((p) => p.etapaId)).size,
     ])
   );
-  const medalhas = ["🥇", "🥈", "🥉"];
-
   $("#geral-corpo").innerHTML = ranking
     .map((s, i) => {
-      const tem = s.qtd > 0;
-      const classes = [tem && i === 0 ? "lider" : "", s.nome === estado.eu ? "sou-eu" : ""]
-        .filter(Boolean)
-        .join(" ");
-      return `
-        <tr class="${classes}">
-          <td class="numero"><span class="medalha">${tem && i < 3 ? medalhas[i] : ""}</span>${i + 1}</td>
-          <td class="nome-pescador">${esc(s.nome)}</td>
-          <td class="numero">${etapasPorPescador.get(s.nome) || 0}</td>
-          <td class="numero">${s.qtd}</td>
-          <td class="numero ${s.pontos < 0 ? "pontos negativo" : "pontos"}">${formatarNumero(s.pontos)}</td>
-        </tr>`;
+      const etapas = etapasPorPescador.get(s.nome) || 0;
+      const partes = s.qtd
+        ? [
+            `${etapas} ${etapas === 1 ? "etapa" : "etapas"}`,
+            `${s.qtd} ${s.qtd === 1 ? "peixe" : "peixes"}`,
+            formatarPeso(s.pesoTotal),
+          ]
+        : ["ainda não pescou"];
+      return linhaDoPlacar(s, i, esc(partes.join(" · ")));
     })
     .join("");
 
