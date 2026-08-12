@@ -84,10 +84,18 @@ function renderizarPeixes() {
           ? `<span class="peixe-fixa">${esc(p.pontosFixos)} pts fixos</span>`
           : `<span class="peixe-fator">fator ${esc(p.fator)}</span>`;
       const marca = p.trofeu ? "🏆" : p.penalidade ? "⚠️" : "🐟";
+      // Nome científico e comprimento máximo vêm da tabela oficial do Rodrigo e
+      // servem para identificar o bicho — é o que a tabela existe para resolver.
+      const ficha = [p.cientifico, p.tamanhoMaximo ? `até ${p.tamanhoMaximo} cm` : ""]
+        .filter(Boolean)
+        .join(" · ");
       return `
         <div class="item-peixe">
           <span class="peixe-icone">${marca}</span>
-          <span class="peixe-nome">${esc(p.nome)}</span>
+          <span class="peixe-nome">
+            ${esc(p.nome)}
+            ${ficha ? `<span class="peixe-ficha">${esc(ficha)}</span>` : ""}
+          </span>
           ${detalhe}
           <span class="item-peixe-acoes">
             <button class="link-acao" data-editar-peixe="${esc(p.nome)}">editar</button>

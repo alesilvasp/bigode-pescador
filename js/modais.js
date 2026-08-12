@@ -188,8 +188,15 @@ function ajustarEscalaTamanho(valorAtual = 0) {
   const configurado = Number(estado.ajustes.tamanhoMaximo) || 100;
   const maior = estado.pescas.reduce((m, p) => Math.max(m, Number(p.tamanho) || 0), 0);
 
+  // Comprimento máximo da espécie escolhida, da tabela oficial do Rodrigo. Uma
+  // garoupa chega a 150 cm e uma carapeba a 50: régua por espécie mira muito
+  // melhor que uma régua só para todos. Continua sem cortar nada — o campo
+  // digitável é a fonte da verdade e faz a régua crescer se precisar.
+  const daEspecie = Number(peixePorNome($("#campo-tipo").value)?.tamanhoMaximo) || 0;
+  const base = daEspecie || Math.max(configurado, maior);
+
   // Arredonda para cima na dezena, para a régua não terminar num número torto.
-  const teto = Math.max(configurado, Math.ceil(Math.max(maior, valorAtual) / 10) * 10);
+  const teto = Math.max(base, Math.ceil(valorAtual / 10) * 10);
   slider.max = String(teto);
 
   $("#slider-escala").innerHTML = [0, 0.25, 0.5, 0.75, 1]
@@ -265,6 +272,8 @@ export function iniciarModalPesca() {
     const ehNovo = $("#campo-tipo").value === OPCAO_NOVO;
     $("#bloco-novo-peixe").classList.toggle("oculto", !ehNovo);
     atualizarModoMedidas();
+    // A régua acompanha a espécie escolhida, sem mexer no valor já digitado.
+    ajustarEscalaTamanho(tamanhoDigitado());
     atualizarPreviewPontuacao();
   });
 

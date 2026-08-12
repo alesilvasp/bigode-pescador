@@ -58,6 +58,35 @@ Rodrigo ou do Alex que o originou. Não altere sem falar com o Rodrigo; ele é a
 autoridade sobre pontuação. A **Corvina** é a única sem confirmação dele (ver
 `BACKLOG.md`).
 
+#### A tabela oficial das espécies (Rodrigo, 12/08/2026)
+
+Ele mandou no grupo uma tabela com **32 espécies**, cada uma com nome
+científico, comprimento máximo e uma **faixa de valor por cor**. A tabela **não
+traz número de fator** — traz faixa. O mapa usado é o que reproduz os quatro
+fatores que ele já havia dado:
+
+| Faixa (cor na tabela) | Fator | Confere com |
+|---|:--:|---|
+| Alto Valor Esportivo (azul-marinho) | 5 | Robalo, Caranha, Traíra |
+| Médio Valor (azul) | 4 | Corvina |
+| Bagres e Menor Valor (cinza) | 2 | Bagre |
+| Penalidade (vermelho) | −0,5 | Baiacu |
+
+Duas exceções propositais, porque **fala dele vence cor**: a **Pescada** segue
+**5** (*"mesmo peso de caranha e pescada e robalo"*) embora a tabela a pinte como
+Médio Valor, e o **Peixe Galo** segue **10** (o "super trunfo"), que não tem
+faixa correspondente. As duas estão no `BACKLOG.md` esperando confirmação.
+
+A lista foi de 8 para **34**: as 32 da tabela, mais "Robalo" e "Bagre"
+genéricos. Os genéricos ficam porque **a chave do peixe é o nome** e as pescas
+já registradas usam esses nomes — renomear deixaria o histórico órfão. O "GALO"
+da tabela é o "Peixe Galo" que já existia, pelo mesmo motivo.
+
+`cientifico` e `tamanhoMaximo` vivem **só no aparelho**: não há coluna para eles
+no banco, e os mapeadores do `sync.js` não os enviam. Criar coluna exigiria SQL,
+que só o Alex roda. Por isso `aplicarRemoto()` preserva os dois quando o peixe
+volta do servidor — senão a primeira sincronização apagaria a tabela toda.
+
 Dois modos de peixe:
 - `formula` — a conta acima.
 - `fixa` — vale `pontosFixos`, ignorando peso e tamanho. Ao escolher um desses,
@@ -221,7 +250,23 @@ quando o registro volta do servidor.
     `ASSUMIR_CONTROLE`, e a página nunca abre para mandá-la. A saída é
     **fechar todas as abas do app e abrir de novo** — aí o antigo é liberado e
     o novo assume. Vale saber antes de mandar alguém "limpar dados do site".
-20. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+20. **Peixe padrão novo é semeado por AUSÊNCIA DE NOME, não por store vazio.**
+    `garantirPeixesPadrao()` fazia `if (existentes.length) return`, e com isso
+    espécie nova no `config.js` nunca chegava a quem já tinha o app — a lista
+    saltou de 8 para 34 e todos os aparelhos em uso ficariam com os 8 antigos.
+    A função também **completa** `cientifico`/`tamanhoMaximo` em peixe que já
+    existia (sem isso o Robalo, o mais usado, ficava com régua de 100 em vez de
+    120 cm), mas **nunca** toca em `fator`, `modo` ou `removido`: aquilo é
+    decisão do grupo, isto é catálogo. E não mexe no `atualizadaEm`, para o
+    registro não parecer escrita nova no last-write-wins.
+21. **`npm run dev` não manda `Cache-Control`.** O `serve` responde só com
+    ETag, e o Chrome então cacheia `js/` e `css/` por heurística: você edita um
+    módulo, recarrega e continua rodando o antigo — sem erro, sem pista, e o
+    teste "falha" por um motivo que não existe. Some com isso servindo com
+    `npx http-server . -p 5003 -c-1`, que manda `no-store`. Cuidado para não
+    confundir com o cache do service worker, que é cache-first por versão: se a
+    `VERSAO` não subiu, ele também serve arquivo velho.
+22. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.

@@ -109,6 +109,73 @@ describe("fatores oficiais — cada um tem fonte no grupo", () => {
   });
 });
 
+describe("tabela oficial das espécies (Rodrigo, 12/08/2026)", () => {
+  const porNome = new Map(PEIXES_PADRAO.map((p) => [p.nome, p]));
+
+  it("tem as 34 espécies da lista", () => {
+    assert.equal(PEIXES_PADRAO.length, 34);
+  });
+
+  it("nome de peixe não repete — o nome é a chave no banco", () => {
+    assert.equal(new Set(PEIXES_PADRAO.map((p) => p.nome)).size, PEIXES_PADRAO.length);
+  });
+
+  it("os 8 nomes originais continuam existindo", () => {
+    // A chave do peixe é o nome, e as pescas já registradas guardam esse nome.
+    // Renomear "Robalo" para "Robalo Flecha" deixaria o histórico órfão.
+    for (const nome of ["Robalo", "Caranha", "Pescada", "Traíra", "Corvina", "Bagre", "Peixe Galo", "Baiacu"]) {
+      assert.ok(porNome.has(nome), `faltou ${nome}`);
+    }
+  });
+
+  it("alto valor esportivo vale 5", () => {
+    for (const nome of ["Robalo", "Robalo Flecha", "Robalo Peva", "Caranha", "Traíra",
+                        "Garoupa", "Badejo", "Linguado", "Anchova", "Olhete", "Tucunaré"]) {
+      assert.equal(porNome.get(nome)?.fator, 5, nome);
+    }
+  });
+
+  it("médio valor vale 4", () => {
+    for (const nome of ["Corvina", "Xaréu", "Cioba", "Bonito", "Pescada Amarela", "Pampo",
+                        "Vermelho", "Serra", "Sororoca", "Sargo", "Carapeba", "Jundiá"]) {
+      assert.equal(porNome.get(nome)?.fator, 4, nome);
+    }
+  });
+
+  it("bagres e menor valor valem 2", () => {
+    for (const nome of ["Bagre", "Bagre Bandeira", "Bagre Amarelo", "Bagre Marinho",
+                        "Bagre Branco", "Mandi", "Tainha", "Parati"]) {
+      assert.equal(porNome.get(nome)?.fator, 2, nome);
+    }
+  });
+
+  it("Pescada segue 5, não 4 — fala do Rodrigo vence a cor da tabela", () => {
+    // "mesmo peso de caranha e pescada e robalo". A tabela pinta a Pescada como
+    // Médio Valor (que daria 4); até ele confirmar, vale o que ele falou.
+    assert.equal(porNome.get("Pescada").fator, 5);
+    assert.equal(porNome.get("Pescada").fator, porNome.get("Caranha").fator);
+  });
+
+  it("Peixe Galo segue 10, o super trunfo", () => {
+    assert.equal(porNome.get("Peixe Galo").fator, 10);
+    assert.equal(porNome.get("Peixe Galo").cientifico, "Selene vomer");
+  });
+
+  it("toda espécie tem nome científico e comprimento máximo", () => {
+    for (const p of PEIXES_PADRAO) {
+      assert.ok(p.cientifico?.length > 3, `${p.nome} sem científico`);
+      assert.ok(p.tamanhoMaximo >= 40 && p.tamanhoMaximo <= 150, `${p.nome}: ${p.tamanhoMaximo}`);
+    }
+  });
+
+  it("o comprimento máximo é o da tabela, por espécie", () => {
+    assert.equal(porNome.get("Garoupa").tamanhoMaximo, 150);
+    assert.equal(porNome.get("Badejo").tamanhoMaximo, 140);
+    assert.equal(porNome.get("Carapeba").tamanhoMaximo, 50);
+    assert.equal(porNome.get("Baiacu").tamanhoMaximo, 40);
+  });
+});
+
 describe("calibragem pelos multiplicadores", () => {
   it("multiplicadores em 1 reproduzem a regra original", () => {
     assert.equal(

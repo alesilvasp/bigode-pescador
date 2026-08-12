@@ -155,14 +155,51 @@ export async function garantirEtapaAberta() {
 // do servidor com data anterior — e o registro apagado ressuscitaria.
 const CARIMBO_SEED = "1970-01-01T00:00:00.000Z";
 
-/** Semeia os peixes padrão na primeira execução, sem sobrescrever edições. */
+/**
+ * Semeia os peixes padrão, sem sobrescrever edição nenhuma.
+ *
+ * Semeia por AUSÊNCIA de nome, não pelo store estar vazio. Antes era `if
+ * (existentes.length) return`, e com isso espécie nova no `config.js` nunca
+ * chegava a quem já tinha o app: a lista oficial do Rodrigo saltou de 8 para 34
+ * peixes e todos os aparelhos em uso ficariam com os 8 antigos para sempre.
+ *
+ * Peixe que alguém REMOVEU continua no store com `removido: true`, então cai no
+ * `has()` e não é recriado — a remoção é respeitada.
+ *
+ * Carimbo antigo de propósito (ver `CARIMBO_SEED`), e sem enfileirar para sync:
+ * cada aparelho semeia o seu ao atualizar o app.
+ */
 async function garantirPeixesPadrao() {
   const existentes = await db.listar(db.STORES.peixes);
-  if (existentes.length) return;
-  await db.putVarios(
-    db.STORES.peixes,
-    PEIXES_PADRAO.map((p) => ({ ...p, padrao: true, atualizadaEm: CARIMBO_SEED }))
-  );
+  const jaTem = new Map(existentes.map((p) => [p.nome, p]));
+
+  const faltando = PEIXES_PADRAO.filter((p) => !jaTem.has(p.nome)).map((p) => ({
+    ...p,
+    padrao: true,
+    atualizadaEm: CARIMBO_SEED,
+  }));
+
+  // Completa nome científico e comprimento máximo nos peixes que já estavam
+  // aqui. Sem isto, só as espécies NOVAS teriam os dados da tabela e justamente
+  // os mais usados ficariam sem: o Robalo continuaria com régua de 100 cm em
+  // vez de 120, num aparelho que usa o app desde antes.
+  //
+  // Só preenche o que está vazio, e não toca em `fator`, `modo` nem `removido`
+  // — aquilo é decisão do grupo, isto é dado de catálogo. `atualizadaEm` também
+  // fica como está, para não parecer escrita nova no last-write-wins do sync.
+  const completar = [];
+  for (const padrao of PEIXES_PADRAO) {
+    const atual = jaTem.get(padrao.nome);
+    if (!atual || (atual.cientifico && atual.tamanhoMaximo)) continue;
+    completar.push({
+      ...atual,
+      cientifico: atual.cientifico || padrao.cientifico,
+      tamanhoMaximo: atual.tamanhoMaximo || padrao.tamanhoMaximo,
+    });
+  }
+
+  if (faltando.length) await db.putVarios(db.STORES.peixes, faltando);
+  if (completar.length) await db.putVarios(db.STORES.peixes, completar);
 }
 
 /**
@@ -500,6 +537,11 @@ export async function removerPesca(id) {
 // ---- Peixes ---------------------------------------------------------------
 
 export async function salvarPeixe(peixe) {
+  // Nome científico e comprimento máximo vêm da tabela oficial e não têm campo
+  // no formulário: sem preservar aqui, editar o fator de uma espécie apagaria
+  // os dois e a régua do slider voltaria ao limite genérico.
+  const anterior = peixePorNome(peixe.nome?.trim());
+
   const registro = {
     nome: peixe.nome.trim(),
     fator: Number(peixe.fator) || 0,
@@ -511,6 +553,11 @@ export async function salvarPeixe(peixe) {
     removido: false,
     atualizadaEm: new Date().toISOString(),
   };
+
+  const cientifico = peixe.cientifico ?? anterior?.cientifico;
+  const tamanhoMaximo = peixe.tamanhoMaximo ?? anterior?.tamanhoMaximo;
+  if (cientifico) registro.cientifico = cientifico;
+  if (tamanhoMaximo) registro.tamanhoMaximo = tamanhoMaximo;
 
   await db.put(db.STORES.peixes, registro);
   await db.enfileirar("upsert", "peixe", registro);
@@ -595,8 +642,19 @@ export async function aplicarRemoto(entidade, registro) {
 
   // Peixes padrão semeados localmente não devem perder a marca ao voltar
   // do servidor, senão somem da lista de sugestões.
-  if (entidade === "peixe" && i >= 0 && lista[i].padrao) {
-    registro = { ...registro, padrao: true };
+  //
+  // Mesmo motivo vale para nome científico e comprimento máximo: eles não têm
+  // coluna no banco (isso exigiria SQL, que só o Alex roda), então o registro
+  // que volta do servidor vem sempre sem os dois. Sem preservar, a primeira
+  // sincronização apagaria a tabela oficial de todos os aparelhos.
+  if (entidade === "peixe" && i >= 0) {
+    const local = lista[i];
+    registro = {
+      ...registro,
+      ...(local.padrao ? { padrao: true } : {}),
+      ...(local.cientifico ? { cientifico: local.cientifico } : {}),
+      ...(local.tamanhoMaximo ? { tamanhoMaximo: local.tamanhoMaximo } : {}),
+    };
   }
 
   await db.put(store, registro);

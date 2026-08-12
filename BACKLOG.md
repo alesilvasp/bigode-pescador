@@ -26,6 +26,11 @@ Também entraram, fora da lista original:
 - **Importar JSON** — contrapartida do export.
 - **Recordes e destaque do líder**.
 - **Testes** da regra de pontuação (`npm test`).
+- **Tabela oficial das espécies** — as 32 espécies que o Rodrigo mandou, com
+  nome científico e comprimento máximo (a lista foi de 8 para 34 peixes). O
+  comprimento máximo vira a **régua do formulário por espécie**: garoupa vai a
+  150 cm, carapeba a 50, e continua sem cortar quem digita mais que isso. Os
+  fatores saem da faixa de valor da tabela — ver as três dúvidas abertas abaixo.
 - **Aba Pódio** — o resultado fechado do campeonato: pódio em degraus da última
   etapa com resultado (coroa para o campeão de etapa encerrada, "liderando
   agora" enquanto está aberta) e o **quadro de títulos**, que aparece com duas
@@ -124,6 +129,26 @@ corrigidos**, testes de 31 → 48. Detalhe técnico de cada um está nas
 ---
 
 ## Pendências com o grupo (não são código)
+
+### 🎣 Aberta: três dúvidas da tabela oficial das espécies
+
+O Rodrigo mandou em 12/08/2026 a **tabela oficial das 32 espécies**, com nome
+científico, comprimento máximo e faixa de valor por cor. Ela já está no app (34
+peixes, com o comprimento máximo virando a régua do formulário por espécie). O
+que ela **não** traz é número de fator, e três pontos ficaram em aberto:
+
+1. **Pescada é 5 ou 4?** Ele disse *"mesmo peso de caranha e pescada e robalo"*,
+   o que dá 5. A tabela pinta a Pescada como **Médio Valor**, faixa que
+   corresponde a 4. Está valendo **5**, porque fala é mais específica que cor.
+2. **Peixe Galo continua 10?** É o "super trunfo" (*"colocaria 10 pontos"*), mas
+   na tabela ele aparece só como Alto Valor, junto do robalo, que é 5. Está
+   valendo **10**.
+3. **A faixa "Valor Padrão" (azul claro) existe para quê?** Está na legenda, mas
+   **nenhuma das 32 espécies** usa essa cor. Ou é faixa sobrando, ou algum peixe
+   deveria estar nela — e nesse caso falta saber qual fator ela vale.
+
+Confirmado o que ele responder, é trocar número no `js/config.js` (cada fator
+tem a fonte em comentário) e ajustar o teste correspondente.
 
 ### ⚖️ Aberta: o peso dominar é intencional?
 

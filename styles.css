@@ -550,6 +550,17 @@ tr.sou-eu td:first-child { box-shadow: inset 3px 0 0 var(--ciano); }
 }
 .peixe-icone { flex-shrink: 0; }
 .peixe-nome { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Nome científico e comprimento máximo, da tabela oficial das espécies. */
+.peixe-ficha {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .peixe-fator, .peixe-fixa {
   font-size: 0.74rem;
   color: var(--texto-suave);
