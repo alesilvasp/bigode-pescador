@@ -50,6 +50,19 @@
   <button class="aba" data-aba="ajustes" role="tab" aria-selected="false">⚙️<span>Ajustes</span></button>
 </nav>
 
+<!-- ===================== Convite para instalar =====================
+     Quem chega pelo link cai no navegador, e é aí que o app parece
+     "site". Esta faixa é o que conta que dá para levar na tela inicial. -->
+<div id="convite-instalar" class="convite oculto">
+  <span class="convite-icone" aria-hidden="true">📲</span>
+  <div class="convite-texto">
+    <strong>Leve na tela inicial</strong>
+    <span>Abre como app e registra peixe sem sinal.</span>
+  </div>
+  <button id="btn-convite-ver" class="btn btn-primario btn-pequeno">Ver como</button>
+  <button id="btn-convite-depois" class="convite-dispensar" aria-label="Agora não">✕</button>
+</div>
+
 <main class="conteudo">
 
   <!-- ===================== Aba: Campeonato ===================== -->
@@ -411,6 +424,36 @@
     <h2 id="titulo-bemvindo">🎣 Quem é você?</h2>
     <p class="ajuda">Só para já deixar seu nome selecionado quando registrar um peixe.</p>
     <div id="opcoes-eu" class="opcoes-etapa"></div>
+  </div>
+</div>
+
+<!-- ===================== Modal: instalar na tela inicial ===================== -->
+<div id="modal-instalar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="titulo-instalar">
+  <div class="modal-caixa">
+    <h2 id="titulo-instalar">📲 Levar para a tela inicial</h2>
+    <p class="ajuda">Leva dez segundos, e é o que faz o app funcionar direito na pescaria.</p>
+
+    <ul class="motivos">
+      <li>
+        <span aria-hidden="true">📶</span>
+        <span><strong>Funciona sem sinal.</strong> Registre o peixe na hora; sobe sozinho quando a rede voltar.</span>
+      </li>
+      <li>
+        <span aria-hidden="true">📱</span>
+        <span><strong>Abre em tela cheia</strong>, pelo ícone, sem a barra do navegador comendo espaço.</span>
+      </li>
+      <li>
+        <span aria-hidden="true">🎣</span>
+        <span><strong>Segurando o ícone</strong> você cai direto no formulário de nova pesca.</span>
+      </li>
+    </ul>
+
+    <div id="passos-instalar" class="passos"></div>
+
+    <div class="modal-acoes">
+      <button id="btn-instalar-agora" class="btn btn-primario oculto">Instalar agora</button>
+      <button id="btn-instalar-fechar" class="btn btn-secundario">Fechar</button>
+    </div>
   </div>
 </div>
 

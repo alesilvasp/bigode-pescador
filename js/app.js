@@ -107,6 +107,12 @@ async function iniciar() {
     trocarAba("campeonato");
   }
 
+  // ---- Convite para levar o app para a tela inicial
+  // Por último, e com uma folga: o "quem é você?" e o atalho do ícone também
+  // abrem modal, e a explicação da instalação não pode atropelar nenhum dos
+  // dois. Com os dois já na tela, o convite se contenta com a faixa.
+  setTimeout(() => pwa.convidarParaInstalar(), 400);
+
   console.info("[app] Bigode Pescador pronto 🎣");
 }
 

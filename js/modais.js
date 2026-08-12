@@ -24,7 +24,9 @@ import { urlDaFoto } from "./db.js";
 import {
   $,
   $$,
+  abrir,
   esc,
+  fechar,
   formatarDataCurta,
   preencherSelectPeixes,
   toast,
@@ -41,16 +43,6 @@ let peixeEmEdicao = null;
 let urlPreview = null;
 
 // ---- Utilidades ------------------------------------------------------------
-
-function abrir(idModal) {
-  $(idModal).classList.remove("oculto");
-  document.body.classList.add("travado");
-}
-
-function fechar(idModal) {
-  $(idModal).classList.add("oculto");
-  if (!$$(".modal:not(.oculto)").length) document.body.classList.remove("travado");
-}
 
 /**
  * Reduz a imagem num canvas e devolve um Blob JPEG.

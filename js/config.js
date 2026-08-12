@@ -63,6 +63,8 @@ export const CHAVES = {
   pescadores: "bigode-pescador:pescadores",
   supabase: "bigode-pescador:supabase", // { url, anonKey } opcional
   migrado: "bigode-pescador:migrado-v2",
+  conviteInstalar: "bigode-pescador:convite-instalar", // quando dispensaram o convite
+  jaEnsinouInstalar: "bigode-pescador:ja-ensinou-instalar",
   // chaves da v1, lidas uma única vez na migração
   v1Pescas: "bigode-pescador:pescas",
   v1PeixesExtra: "bigode-pescador:peixes-extra",

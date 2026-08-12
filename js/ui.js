@@ -24,6 +24,23 @@ import { situacao as situacaoSync } from "./sync.js";
 export const $ = (sel, raiz = document) => raiz.querySelector(sel);
 export const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
 
+// ---- Modais ----------------------------------------------------------------
+// Moram aqui, e não em `modais.js`, porque o `pwa.js` também abre um modal e
+// importar `modais.js` de lá fecharia um ciclo entre os dois.
+
+export function abrir(idModal) {
+  $(idModal).classList.remove("oculto");
+  document.body.classList.add("travado");
+}
+
+export function fechar(idModal) {
+  $(idModal).classList.add("oculto");
+  if (!$$(".modal:not(.oculto)").length) document.body.classList.remove("travado");
+}
+
+/** Tem algum modal na frente agora? */
+export const temModalAberto = () => $$(".modal:not(.oculto)").length > 0;
+
 /** Escapa HTML. Usado em TODA interpolação de dado do usuário. */
 export function esc(valor) {
   return String(valor ?? "")

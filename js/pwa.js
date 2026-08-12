@@ -2,7 +2,8 @@
 //  PWA — service worker, instalação e atalhos.
 // =========================================================================
 
-import { $, avisoComAcao, toast } from "./ui.js";
+import { CHAVES } from "./config.js";
+import { $, abrir, avisoComAcao, fechar, temModalAberto, toast } from "./ui.js";
 
 let promptInstalacao = null;
 let registroSW = null;
@@ -98,46 +99,165 @@ export function iniciarInstalacao() {
     e.preventDefault();
     promptInstalacao = e;
     botao.classList.remove("oculto");
+    // O evento costuma chegar DEPOIS do modal já estar aberto: se for o caso,
+    // troca a instrução manual pelo botão que instala de verdade.
+    if (!$("#modal-instalar").classList.contains("oculto")) desenharModalInstalar();
   });
 
   window.addEventListener("appinstalled", () => {
     promptInstalacao = null;
     botao.classList.add("oculto");
-    toast("App instalado! 🎣");
+    esconderConvite();
+    fechar("#modal-instalar");
+    toast("Instalado! Pode fechar o navegador e abrir pelo ícone. 🎣");
   });
 
-  botao.addEventListener("click", async () => {
-    // iOS não expõe beforeinstallprompt — só dá para explicar o caminho.
-    if (!promptInstalacao) {
-      mostrarInstrucaoIos();
-      return;
-    }
+  botao.addEventListener("click", abrirComoInstalar);
+
+  // No iPhone, mostra o botão mesmo sem o evento: lá a instalação é manual e
+  // o botão existe só para caber a explicação.
+  if (ehIos() && !estaInstalado()) botao.classList.remove("oculto");
+
+  iniciarConvite();
+  iniciarModalInstalar();
+}
+
+// ---- O convite que aparece ao abrir o link ---------------------------------
+//
+//  Quem chega pelo link no grupo cai no navegador, e ali o app parece um site
+//  qualquer — sem ícone, com a barra do Chrome comendo a tela e, o que importa
+//  de verdade, sem a garantia de abrir na beira do rio. A faixa existe para
+//  contar isso. Ela some para quem já instalou e para quem dispensou.
+
+const DIAS_ATE_INSISTIR = 14;
+
+function iniciarConvite() {
+  $("#btn-convite-ver").addEventListener("click", abrirComoInstalar);
+
+  $("#btn-convite-depois").addEventListener("click", () => {
+    localStorage.setItem(CHAVES.conviteInstalar, String(Date.now()));
+    esconderConvite();
+    toast("Beleza. Quando quiser, o botão fica em Ajustes.");
+  });
+}
+
+const esconderConvite = () => $("#convite-instalar").classList.add("oculto");
+
+/** Vale a pena convidar este aparelho? */
+function cabeConvite() {
+  if (estaInstalado()) return false;
+  if (location.protocol === "file:") return false;
+
+  // Num PC o app até instala, mas o ganho real — offline no rio, ícone na mão —
+  // é do celular. Convida só quem está com o dedo na tela.
+  if (!ehCelular()) return false;
+
+  const dispensadoEm = Number(localStorage.getItem(CHAVES.conviteInstalar)) || 0;
+  if (!dispensadoEm) return true;
+  return Date.now() - dispensadoEm >= DIAS_ATE_INSISTIR * 86400000;
+}
+
+/** Chamado no fim do boot. Mostra a faixa e, na primeira vez, explica tudo. */
+export function convidarParaInstalar() {
+  if (!cabeConvite()) return;
+
+  $("#convite-instalar").classList.remove("oculto");
+
+  // A primeira visita ganha a explicação inteira, uma vez só na vida do
+  // aparelho. Se o "quem é você?" estiver na frente, fica só a faixa —
+  // empilhar dois modais logo na primeira abertura é atropelo.
+  if (localStorage.getItem(CHAVES.jaEnsinouInstalar) || temModalAberto()) return;
+  localStorage.setItem(CHAVES.jaEnsinouInstalar, "1");
+  abrirComoInstalar();
+}
+
+// ---- O modal que ensina o caminho ------------------------------------------
+
+function iniciarModalInstalar() {
+  $("#btn-instalar-fechar").addEventListener("click", () => fechar("#modal-instalar"));
+
+  $("#modal-instalar").addEventListener("click", (e) => {
+    if (e.target.id === "modal-instalar") fechar("#modal-instalar");
+  });
+
+  $("#btn-instalar-agora").addEventListener("click", async () => {
+    if (!promptInstalacao) return;
+
     promptInstalacao.prompt();
     const { outcome } = await promptInstalacao.userChoice;
-    if (outcome === "accepted") botao.classList.add("oculto");
+
+    // O evento só serve uma vez: usado, o navegador não o devolve.
     promptInstalacao = null;
+    $("#btn-instalar-agora").classList.add("oculto");
+
+    if (outcome === "accepted") {
+      fechar("#modal-instalar");
+    } else {
+      // Recusou: troca o botão pela instrução manual, senão o modal fica
+      // sem nenhum caminho para seguir.
+      desenharModalInstalar();
+      toast("Sem problema. O convite continua em Ajustes.");
+    }
   });
-
-  // No iPhone, mostra o botão mesmo sem o evento, para caber a instrução.
-  if (ehIos() && !estaInstalado()) botao.classList.remove("oculto");
 }
 
-function mostrarInstrucaoIos() {
+export function abrirComoInstalar() {
+  desenharModalInstalar();
+  abrir("#modal-instalar");
+}
+
+function desenharModalInstalar() {
+  $("#passos-instalar").innerHTML = passosDaPlataforma();
+  $("#btn-instalar-agora").classList.toggle("oculto", !promptInstalacao);
+}
+
+function passosDaPlataforma() {
   if (ehIos()) {
-    alert(
-      "Para instalar no iPhone:\n\n" +
-        "1. Toque no botão Compartilhar (o quadrado com a seta para cima)\n" +
-        "2. Role e toque em \"Adicionar à Tela de Início\"\n" +
-        "3. Toque em \"Adicionar\"\n\n" +
-        "Precisa ser pelo Safari — no Chrome do iPhone não aparece a opção."
-    );
-  } else {
-    alert(
-      "Para instalar:\n\n" +
-        "Abra o menu do navegador (⋮) e escolha \"Instalar app\" ou \"Adicionar à tela inicial\"."
-    );
+    // Chrome e Firefox no iPhone não têm "Adicionar à Tela de Início". É
+    // limitação do iOS, e sem avisar a pessoa procura um menu que não existe.
+    if (!ehSafari()) {
+      return `
+        <h3>No iPhone, tem que ser pelo Safari</h3>
+        <ol>
+          <li>Abra <strong>bigode-pescador.vercel.app</strong> no <strong>Safari</strong>.</li>
+          <li>Toque em <strong>Compartilhar</strong>, o quadrado com a seta para cima.</li>
+          <li>Role e toque em <strong>Adicionar à Tela de Início</strong>.</li>
+        </ol>
+        <p class="aviso">Neste navegador a opção não aparece — é restrição do iPhone, não do app.</p>`;
+    }
+    return `
+      <h3>No iPhone</h3>
+      <ol>
+        <li>Toque em <strong>Compartilhar</strong> — o quadrado com a seta para cima, na barra de baixo.</li>
+        <li>Role a lista e toque em <strong>Adicionar à Tela de Início</strong>.</li>
+        <li>Toque em <strong>Adicionar</strong>, no canto de cima.</li>
+      </ol>`;
   }
+
+  if (promptInstalacao) {
+    return `
+      <h3>No Android</h3>
+      <ol>
+        <li>Toque em <strong>Instalar agora</strong>, aqui embaixo.</li>
+        <li>Confirme em <strong>Instalar</strong>.</li>
+      </ol>`;
+  }
+
+  return `
+    <h3>No Android</h3>
+    <ol>
+      <li>Abra o menu do navegador — o <strong>⋮</strong> no canto de cima.</li>
+      <li>Toque em <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+    </ol>`;
 }
+
+/** Safari de verdade: os outros navegadores do iPhone se anunciam no UA. */
+const ehSafari = () => !/crios|fxios|edgios|opt\//i.test(navigator.userAgent);
+
+/** Tela de toque e estreita. É para quem o convite faz diferença. */
+const ehCelular = () =>
+  window.matchMedia("(pointer: coarse)").matches &&
+  window.matchMedia("(max-width: 900px)").matches;
 
 export const ehIos = () =>
   /iphone|ipad|ipod/i.test(navigator.userAgent) ||
