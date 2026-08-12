@@ -15,7 +15,7 @@
 //  faz o celular de cada um pegar a versão nova.
 // =========================================================================
 
-const VERSAO = "v2.2.0";
+const VERSAO = "v2.3.0";
 const CACHE = `bigode-pescador-${VERSAO}`;
 
 // Tudo que o app precisa para abrir offline.
@@ -88,6 +88,22 @@ self.addEventListener("activate", (evento) => {
 
 // ---- Requisições ----------------------------------------------------------
 
+/**
+ * Devolve a resposta sem a marca de "veio de redirect".
+ *
+ * O Chrome recusa responder uma navegação com resposta redirecionada e a
+ * página nem abre. Reconstruir apaga a marca e preserva o conteúdo — melhor
+ * que descartar, que deixaria o app sem abrir offline.
+ */
+async function semRedirect(resp) {
+  if (!resp || !resp.redirected) return resp;
+  return new Response(await resp.blob(), {
+    status: 200,
+    statusText: resp.statusText,
+    headers: resp.headers,
+  });
+}
+
 self.addEventListener("fetch", (evento) => {
   const req = evento.request;
 
@@ -109,11 +125,20 @@ self.addEventListener("fetch", (evento) => {
     evento.respondWith(
       (async () => {
         const cache = await caches.open(CACHE);
-        const cacheado = await cache.match("./index.html");
+
+        // Casa com a RAIZ primeiro, não com "./index.html". Servidor com clean
+        // URLs (a Vercel, por `cleanUrls`, e o `serve` do npm run dev) responde
+        // 301/308 em /index.html, então o que o install guardou nessa chave é
+        // uma resposta marcada como REDIRECIONADA — e devolver isso para uma
+        // navegação faz o Chrome derrubar a página. Não aparece nada no log do
+        // servidor: só uma tela de erro, como se o app não existisse.
+        const cacheado = await semRedirect(
+          (await cache.match("./")) || (await cache.match("./index.html"))
+        );
 
         const daRede = fetch(req)
           .then((resp) => {
-            if (resp && resp.ok) cache.put("./index.html", resp.clone());
+            if (resp && resp.ok) cache.put("./", resp.clone());
             return resp;
           })
           .catch(() => null);
