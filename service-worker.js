@@ -15,7 +15,7 @@
 //  faz o celular de cada um pegar a versão nova.
 // =========================================================================
 
-const VERSAO = "v3.0.0";
+const VERSAO = "v3.0.1";
 const CACHE = `bigode-pescador-${VERSAO}`;
 
 // Tudo que o app precisa para abrir offline.

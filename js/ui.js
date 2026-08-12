@@ -214,9 +214,14 @@ function linhaDoPlacar(s, i, detalhe) {
     .filter(Boolean)
     .join(" ");
 
+  // Quem ainda não pescou não recebe colocação: numa etapa que acabou de
+  // começar, todos empatam em zero e o primeiro da ordem alfabética aparecia
+  // como "1º lugar" sem ter pescado nada.
+  const posicao = !tem ? "–" : i < 3 ? medalhas[i] : `${i + 1}º`;
+
   return `
     <li class="${classes}">
-      <span class="posicao">${tem && i < 3 ? medalhas[i] : `${i + 1}º`}</span>
+      <span class="posicao">${posicao}</span>
       <span class="placar-info">
         <span class="placar-nome">${esc(s.nome)}</span>
         <span class="placar-detalhe">${detalhe}</span>
