@@ -5,7 +5,14 @@
 //  sincronização. O app precisa estar utilizável antes de qualquer rede.
 // =========================================================================
 
-import { aoMudar, carregar, estado, garantirEtapaAberta } from "./estado.js";
+import {
+  aoMudar,
+  carregar,
+  estado,
+  garantirEtapaAberta,
+  pescasAtivas,
+  pescasDaEtapa,
+} from "./estado.js";
 import * as sync from "./sync.js";
 import * as pwa from "./pwa.js";
 import { aplicarConviteDaUrl, iniciarAjustes, renderizarAjustes } from "./ajustes.js";
@@ -26,6 +33,7 @@ import {
   renderizarCabecalho,
   renderizarGeral,
   renderizarHistorico,
+  renderizarPodio,
   renderizarRanking,
   toast,
   trocarAba,
@@ -98,8 +106,19 @@ async function iniciar() {
     abrirBemVindo();
   }
 
-  // ---- Atalho do ícone do app
   const acao = pwa.lerAcaoDaUrl();
+
+  // ---- Onde abrir
+  // Entre duas pescarias a etapa corrente está criada e vazia, e a aba Etapa
+  // seria uma tabela de zeros — péssima primeira tela para quem acabou de
+  // entrar pelo link do grupo. Nesse caso abre no Pódio, que mostra o último
+  // resultado de verdade. O atalho do ícone tem prioridade: quem tocou nele
+  // já disse o que quer.
+  if (!acao && pescasAtivas().length && !pescasDaEtapa(estado.etapaAtualId).length) {
+    trocarAba("podio");
+  }
+
+  // ---- Atalho do ícone do app
   if (acao === "nova") {
     // Espera a tela assentar para o modal não abrir antes do render.
     setTimeout(() => abrirModalPesca(), 120);
@@ -119,6 +138,7 @@ async function iniciar() {
 function renderizarTelas() {
   renderizarCabecalho();
   renderizarRanking();
+  renderizarPodio();
   renderizarHistorico();
   renderizarGeral();
 }

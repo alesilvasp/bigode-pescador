@@ -227,6 +227,131 @@ body.travado { overflow: hidden; }
   color: var(--texto-suave);
 }
 
+/* ---- Pódio ---------------------------------------------------------------
+   Três degraus com alturas diferentes. A ordem no HTML é a de leitura
+   (1º, 2º, 3º) e quem põe o campeão no meio é o `order` daqui — assim
+   leitor de tela anuncia na ordem certa. */
+
+.podio {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.degrau {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: center;
+}
+.degrau.lugar-1 { order: 2; }
+.degrau.lugar-2 { order: 1; }
+.degrau.lugar-3 { order: 3; }
+
+.degrau-info { padding: 0 2px 8px; }
+.degrau-medalha { font-size: 1.6rem; line-height: 1.2; }
+.degrau-nome {
+  font-weight: 700;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  /* Quebra em até duas linhas em vez de cortar: num degrau de celular
+     "Rodrigo Massi" virava "Rodrigo Ma…" — e o nome cortado era justamente
+     o do campeão, que é a informação da tela. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.degrau-pontos {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--ciano);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.degrau-sub { font-size: 0.68rem; color: var(--texto-suave); line-height: 1.3; }
+
+.degrau-base {
+  background: linear-gradient(180deg, var(--azul-claro), var(--azul-medio));
+  border: 1px solid var(--borda);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lugar-1 .degrau-base {
+  height: 92px;
+  background: linear-gradient(180deg, var(--dourado), #b98f14);
+  color: #3a2c00;
+}
+.lugar-2 .degrau-base { height: 66px; }
+.lugar-3 .degrau-base { height: 48px; }
+
+.lugar-1 .degrau-medalha { font-size: 2rem; }
+.lugar-1 .degrau-pontos { font-size: 1.35rem; color: var(--dourado); }
+
+/* Marca de "sou eu", igual à borda esquerda usada nas tabelas. */
+.degrau.eu .degrau-base { box-shadow: inset 0 3px 0 var(--ciano); }
+.degrau.eu .degrau-nome { color: var(--ciano); }
+
+.nota-podio {
+  font-size: 0.76rem;
+  color: var(--laranja);
+  background: var(--superficie-3);
+  border-left: 3px solid var(--laranja);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+/* Do 4º lugar em diante — não tem degrau, mas continua no placar. */
+.podio-resto {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+.linha-resto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 0.86rem;
+}
+.linha-resto.eu { box-shadow: inset 3px 0 0 var(--ciano); }
+.resto-pos { color: var(--texto-suave); font-weight: 700; font-variant-numeric: tabular-nums; }
+.resto-nome { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resto-pontos { font-weight: 800; color: var(--ciano); font-variant-numeric: tabular-nums; }
+
+/* Quadro de títulos. O `titulo-secao:first-child` zera a margem do topo por
+   ser o primeiro filho do bloco, então a separação vem do container. */
+#titulos-bloco { margin-top: 26px; }
+.tabela-titulos { min-width: 380px; }
+/* No tamanho de cabeçalho de tabela (0.68rem) as três medalhas viram manchas
+   iguais. O `title` não resolve no celular, que não tem hover. */
+.tabela-titulos th.medalha-col { font-size: 1rem; }
+.ganhas {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---- Tabelas ------------------------------------------------------------ */
 
 .tabela-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -876,6 +1001,17 @@ input[type="range"] {
   .card-foto { width: 52px; height: 52px; }
   .modal-caixa { padding: 18px; }
   .recordes { grid-template-columns: repeat(2, 1fr); }
+
+  /* São cinco abas: aperta o vão e a legenda para "Histórico" não quebrar
+     em duas linhas num celular estreito. */
+  .abas { gap: 4px; padding-left: calc(12px + var(--sa-esq)); padding-right: calc(12px + var(--sa-dir)); }
+  .aba { padding: 9px 2px; font-size: 0.95rem; }
+  .aba span { font-size: 0.62rem; }
+
+  .podio { gap: 5px; }
+  .degrau-nome { font-size: 0.8rem; }
+  .degrau-pontos { font-size: 1rem; }
+  .lugar-1 .degrau-pontos { font-size: 1.15rem; }
 }
 
 @media (min-width: 720px) {

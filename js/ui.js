@@ -15,7 +15,7 @@ import {
   pescasDaEtapa,
   peixesAtivos,
 } from "./estado.js";
-import { montarRanking } from "./pontuacao.js";
+import { contarTitulos, etapasComResultado, montarRanking } from "./pontuacao.js";
 import { urlDaFoto } from "./db.js";
 import { situacao as situacaoSync } from "./sync.js";
 
@@ -127,7 +127,7 @@ export function trocarAba(alvo) {
     a.classList.toggle("ativa", ativa);
     a.setAttribute("aria-selected", String(ativa));
   });
-  ["campeonato", "historico", "geral", "ajustes"].forEach((nome) => {
+  ["campeonato", "podio", "historico", "geral", "ajustes"].forEach((nome) => {
     $(`#aba-${nome}`).classList.toggle("oculto", nome !== alvo);
   });
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -234,6 +234,174 @@ function renderizarDestaque(ranking, pescas) {
              de ${esc(maior.pescador)} — ${formatarNumero(maior.pontuacao)} pts</div>`
         : ""
     }`;
+}
+
+// ---- Aba Pódio -------------------------------------------------------------
+
+const MEDALHAS = ["🥇", "🥈", "🥉"];
+
+/**
+ * Qual etapa o pódio mostra.
+ *
+ * Segue a etapa escolhida no cabeçalho, mas cai para a última com pesca quando
+ * a escolhida está vazia. Sem isso, quem abre o app entre duas pescarias — a
+ * etapa nova criada e ainda sem peixe — cairia num pódio em branco, que é a
+ * pior primeira impressão possível para quem chegou pelo link do grupo.
+ */
+function etapaDoPodio(etapas, todas) {
+  const temPesca = (e) => !!e && todas.some((p) => p.etapaId === e.id);
+  const atual = etapaAtual();
+  if (temPesca(atual)) return { etapa: atual, trocada: false };
+
+  // `etapasAtivas()` já vem da mais recente para a mais antiga.
+  const comPesca = etapas.find(temPesca) || null;
+  return { etapa: comPesca, trocada: !!comPesca && !!atual };
+}
+
+export function renderizarPodio() {
+  const todas = pescasAtivas();
+  const etapas = etapasAtivas();
+  renderizarDegraus(etapas, todas);
+  renderizarTitulos(etapas, todas);
+}
+
+function renderizarDegraus(etapas, todas) {
+  const box = $("#podio-bloco");
+  const { etapa, trocada } = etapaDoPodio(etapas, todas);
+
+  if (!etapa) {
+    box.innerHTML = `
+      <h2 class="titulo-secao">Pódio</h2>
+      <p class="vazio">Nenhum peixe registrado ainda. O pódio aparece com a primeira pesca.</p>`;
+    return;
+  }
+
+  const pescas = todas.filter((p) => p.etapaId === etapa.id);
+  const colocados = montarRanking(pescas, estado.pescadores).filter((r) => r.qtd > 0);
+  const encerrada = !!etapa.encerrada;
+
+  // O 1º sai no meio e mais alto; a ordem aqui é a de leitura (1º, 2º, 3º) e
+  // quem reposiciona é o CSS, para leitor de tela não anunciar fora de ordem.
+  const degraus = colocados
+    .slice(0, 3)
+    .map((r, i) => {
+      const eu = r.nome === estado.eu ? " eu" : "";
+      return `
+        <div class="degrau lugar-${i + 1}${eu}">
+          <div class="degrau-info">
+            <div class="degrau-medalha">${encerrada && i === 0 ? "👑" : MEDALHAS[i]}</div>
+            <div class="degrau-nome">${esc(r.nome)}</div>
+            <div class="degrau-pontos">${formatarNumero(r.pontos)}</div>
+            <div class="degrau-sub">
+              ${r.qtd} ${r.qtd === 1 ? "peixe" : "peixes"} · ${formatarPeso(r.pesoTotal)}
+            </div>
+          </div>
+          <div class="degrau-base">${i + 1}º</div>
+        </div>`;
+    })
+    .join("");
+
+  const resto = colocados
+    .slice(3)
+    .map(
+      (r, i) => `
+      <div class="linha-resto${r.nome === estado.eu ? " eu" : ""}">
+        <span class="resto-pos">${i + 4}º</span>
+        <span class="resto-nome">${esc(r.nome)}</span>
+        <span class="resto-pontos">${formatarNumero(r.pontos)}</span>
+      </div>`
+    )
+    .join("");
+
+  box.innerHTML = `
+    <h2 class="titulo-secao">${encerrada ? "🏆 Campeão da etapa" : "🥇 Liderando agora"}</h2>
+    <p class="ajuda">
+      <strong>${esc(etapa.nome)}</strong>
+      · ${esc(formatarDataCurta(etapa.data))}${etapa.local ? ` · ${esc(etapa.local)}` : ""}
+      · ${pescas.length} ${pescas.length === 1 ? "pesca" : "pescas"}
+      ${encerrada ? "" : '<span class="tag">em disputa</span>'}
+    </p>
+    ${
+      trocada
+        ? `<p class="nota-podio">A etapa escolhida no topo ainda não tem peixe — mostrando a última com resultado.</p>`
+        : ""
+    }
+    <div class="podio">${degraus}</div>
+    ${resto ? `<div class="podio-resto">${resto}</div>` : ""}`;
+}
+
+function renderizarTitulos(etapas, todas) {
+  const box = $("#titulos-bloco");
+  const comResultado = etapasComResultado(etapas, todas);
+
+  // Com uma etapa só, o quadro repetiria o pódio de cima. O texto explica o
+  // que falta para ele aparecer — e onde se encerra uma etapa, que é o passo
+  // que ninguém adivinha.
+  if (comResultado.length < 2) {
+    box.innerHTML = `
+      <h2 class="titulo-secao">Títulos</h2>
+      <p class="ajuda">${
+        comResultado.length === 0
+          ? "Vitória só conta em etapa encerrada. Para fechar a atual, vá em <strong>Geral → editar</strong> e marque <em>Etapa encerrada</em>."
+          : "Uma etapa encerrada até aqui. Quando a segunda fechar, este quadro mostra quem tem mais vitórias."
+      }</p>`;
+    return;
+  }
+
+  const quadro = contarTitulos(etapas, todas, estado.pescadores).filter((x) => x.etapas > 0);
+  const lider = quadro[0];
+  const soUmLider = !!lider && quadro.filter((x) => x.vitorias === lider.vitorias).length === 1;
+
+  const linhas = quadro
+    .map(
+      (x, i) => `
+      <tr class="${[i === 0 && x.vitorias > 0 ? "lider" : "", x.nome === estado.eu ? "sou-eu" : ""]
+        .filter(Boolean)
+        .join(" ")}">
+        <td class="numero">${i + 1}</td>
+        <td class="nome-pescador">
+          ${esc(x.nome)}
+          ${x.ganhas.length ? `<span class="ganhas">${esc(x.ganhas.join(" · "))}</span>` : ""}
+        </td>
+        <td class="numero">${x.vitorias || "—"}</td>
+        <td class="numero">${x.segundos || "—"}</td>
+        <td class="numero">${x.terceiros || "—"}</td>
+        <td class="numero ${x.pontos < 0 ? "pontos negativo" : "pontos"}">${formatarNumero(x.pontos)}</td>
+      </tr>`
+    )
+    .join("");
+
+  box.innerHTML = `
+    <h2 class="titulo-secao">Títulos</h2>
+    <p class="ajuda">
+      ${comResultado.length} etapas encerradas. A ordem é por vitórias: quem levou a etapa
+      passa na frente de quem só somou pontos.
+    </p>
+    ${
+      soUmLider && lider.vitorias > 0
+        ? `<div class="destaque">
+             <div class="destaque-titulo">👑 Maior campeão</div>
+             <div class="destaque-nome">${esc(lider.nome)}</div>
+             <div class="destaque-pontos">${lider.vitorias}
+               <span>${lider.vitorias === 1 ? "etapa ganha" : "etapas ganhas"}</span></div>
+           </div>`
+        : ""
+    }
+    <div class="tabela-wrapper">
+      <table class="tabela tabela-titulos">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Pescador</th>
+            <th scope="col" class="numero medalha-col"><abbr title="Vitórias">🥇</abbr></th>
+            <th scope="col" class="numero medalha-col"><abbr title="Segundos lugares">🥈</abbr></th>
+            <th scope="col" class="numero medalha-col"><abbr title="Terceiros lugares">🥉</abbr></th>
+            <th scope="col" class="numero">Pontos</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
 }
 
 // ---- Aba Histórico ---------------------------------------------------------
@@ -464,6 +632,7 @@ export function preencherSelectPeixes(valorSelecionado) {
 export function renderizarTudo() {
   renderizarCabecalho();
   renderizarRanking();
+  renderizarPodio();
   renderizarHistorico();
   renderizarGeral();
 }

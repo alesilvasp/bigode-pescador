@@ -29,7 +29,7 @@ tests/        testes da pontuação
 |---|---|
 | `app.js` | ponto de entrada; ordem de boot |
 | `config.js` | peixes padrão, pescadores, chaves do storage |
-| `pontuacao.js` | **a regra do campeonato** e o ranking |
+| `pontuacao.js` | **a regra do campeonato**, o ranking e os títulos |
 | `db.js` | IndexedDB: pescas, etapas, peixes, fotos, fila de sync |
 | `estado.js` | modelo em memória + operações; única porta de escrita |
 | `ui.js` | renderização das telas; também abre e fecha modais |
@@ -70,6 +70,21 @@ em `1` = regra original intacta.
 > ⚠️ Mudar fator ou multiplicador **recalcula todas as pescas já registradas**.
 > É intencional: campeonato inteiro sob a mesma régua. Difere da v1, que
 > congelava a pontuação no momento do registro.
+
+### Vitórias e títulos
+
+**Vitória só conta em etapa encerrada** (`etapasComResultado` em `pontuacao.js`).
+Com a etapa aberta o líder muda a cada peixe, então o pódio da etapa em
+andamento diz "liderando agora", não "campeão". Etapa encerrada **sem nenhuma
+pesca** também não vale título — senão o primeiro nome em ordem alfabética
+viraria campeão de uma pescaria que ninguém foi.
+
+O quadro de títulos ordena como quadro de medalhas: **vitórias → 2ºs → 3ºs →
+pontos**. Quem levou uma etapa passa na frente de quem somou mais pontos sem
+ganhar nenhuma. Quem não pescou na etapa não recebe colocação nela.
+
+O quadro só aparece com **duas ou mais** etapas encerradas; com uma só ele
+repetiria o pódio logo acima.
 
 ### Modelo de dados
 
@@ -189,7 +204,24 @@ quando o registro volta do servidor.
     estreita). Num PC o app até instala, mas o ganho real — abrir sem sinal na
     beira do rio, ícone na mão — é do celular, e a faixa só atrapalharia. Quem
     dispensa não vê de novo por 14 dias; o botão em Ajustes continua valendo.
-18. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+18. **Navegação NUNCA pode ser respondida com resposta redirecionada.** O
+    install cacheia `./index.html`, mas servidor com clean URLs responde
+    **301/308** nessa URL — a Vercel por `cleanUrls: true`, o `serve` do
+    `npm run dev` por padrão. O que fica no cache é uma resposta marcada como
+    `redirected`, e devolvê-la para uma navegação faz o Chrome **derrubar a
+    página**: `ERR_FAILED`, sem nada no log do servidor, como se o app não
+    existisse. Hoje o handler casa com a **raiz** (`"./"`, que é 200 limpo) e
+    passa por `semRedirect()`, que reconstrói a resposta se preciso.
+    Produção escapava por sorte: o 308 da Vercel aponta para `/`, a mesma URL
+    da navegação, e aí o Chrome aceita. O `serve` redireciona para `/index`,
+    URL diferente — e o dev local quebrava da segunda abertura em diante.
+19. **Service worker ruim não se autocorrige com a aba aberta.** Se um SW que
+    derruba a navegação chegar a controlar o aparelho, a versão corrigida é
+    baixada mas fica em *waiting*: `skipWaiting()` só é chamado pela mensagem
+    `ASSUMIR_CONTROLE`, e a página nunca abre para mandá-la. A saída é
+    **fechar todas as abas do app e abrir de novo** — aí o antigo é liberado e
+    o novo assume. Vale saber antes de mandar alguém "limpar dados do site".
+20. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.

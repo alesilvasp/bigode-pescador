@@ -26,6 +26,11 @@ Também entraram, fora da lista original:
 - **Importar JSON** — contrapartida do export.
 - **Recordes e destaque do líder**.
 - **Testes** da regra de pontuação (`npm test`).
+- **Aba Pódio** — o resultado fechado do campeonato: pódio em degraus da última
+  etapa com resultado (coroa para o campeão de etapa encerrada, "liderando
+  agora" enquanto está aberta) e o **quadro de títulos**, que aparece com duas
+  etapas encerradas e ordena por vitórias. Quem abre o app com a etapa corrente
+  ainda vazia cai nessa aba, em vez de num placar de zeros.
 - **Convite para instalar** — quem abre o link no celular vê uma faixa
   explicando o ganho e, num toque, o passo a passo da plataforma. Antes a
   única porta era um botão escondido em Ajustes que abria um `alert()`, e

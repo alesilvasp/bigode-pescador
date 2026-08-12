@@ -45,6 +45,7 @@
 <!-- ===================== Abas ===================== -->
 <nav class="abas" role="tablist" aria-label="Seções do app">
   <button class="aba ativa" data-aba="campeonato" role="tab" aria-selected="true">🏆<span>Etapa</span></button>
+  <button class="aba" data-aba="podio" role="tab" aria-selected="false">🥇<span>Pódio</span></button>
   <button class="aba" data-aba="historico" role="tab" aria-selected="false">📜<span>Histórico</span></button>
   <button class="aba" data-aba="geral" role="tab" aria-selected="false">📊<span>Geral</span></button>
   <button class="aba" data-aba="ajustes" role="tab" aria-selected="false">⚙️<span>Ajustes</span></button>
@@ -88,6 +89,15 @@
     <div class="acoes-etapa">
       <button id="btn-compartilhar" class="btn btn-secundario btn-pequeno">📤 Compartilhar placar</button>
     </div>
+  </section>
+
+  <!-- ===================== Aba: Pódio =====================
+       O resultado fechado do campeonato: quem levou a etapa e quem já
+       ganhou mais vezes. Vitória só conta em etapa encerrada — enquanto
+       está aberta o líder muda a cada peixe. -->
+  <section id="aba-podio" class="painel-aba oculto" role="tabpanel">
+    <div id="podio-bloco"></div>
+    <div id="titulos-bloco"></div>
   </section>
 
   <!-- ===================== Aba: Histórico ===================== -->

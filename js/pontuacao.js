@@ -99,6 +99,84 @@ export function montarRanking(pescas, pescadores) {
 }
 
 /**
+ * Quem ganhou uma etapa.
+ *
+ * Recebe as pescas JÁ filtradas pela etapa. Devolve a linha do ranking do
+ * primeiro colocado, ou `null` se ninguém registrou nada: etapa sem peixe não
+ * tem campeão, e sem isto o primeiro nome da lista em ordem alfabética viraria
+ * "campeão" de uma etapa vazia.
+ */
+export function campeaoDaEtapa(pescasDaEtapa, pescadores) {
+  const primeiro = montarRanking(pescasDaEtapa, pescadores)[0];
+  return primeiro && primeiro.qtd > 0 ? primeiro : null;
+}
+
+/**
+ * Etapas que já valeram título: encerradas e com pelo menos uma pesca.
+ *
+ * Enquanto a etapa está aberta o líder muda a cada peixe, então vitória só
+ * conta depois de encerrada — é o que separa "está ganhando" de "ganhou".
+ */
+export function etapasComResultado(etapas, pescas) {
+  return etapas.filter(
+    (e) =>
+      !e.removida &&
+      e.encerrada &&
+      pescas.some((p) => p.etapaId === e.id && !p.removida)
+  );
+}
+
+/**
+ * Quadro de títulos: quantas etapas cada um ganhou.
+ *
+ * Ordena como quadro de medalhas — vitórias, depois 2ºs, depois 3ºs — e só
+ * então por pontos. Alguém com uma vitória fica na frente de quem somou mais
+ * pontos sem ganhar nenhuma: aqui o que conta é levar a etapa.
+ *
+ * @returns {Array} { nome, vitorias, segundos, terceiros, etapas, pontos, ganhas }
+ */
+export function contarTitulos(etapas, pescas, pescadores) {
+  const linhas = new Map(
+    pescadores.map((nome) => [
+      nome,
+      { nome, vitorias: 0, segundos: 0, terceiros: 0, etapas: 0, pontos: 0, ganhas: [] },
+    ])
+  );
+
+  for (const etapa of etapasComResultado(etapas, pescas)) {
+    const daEtapa = pescas.filter((p) => p.etapaId === etapa.id && !p.removida);
+
+    // Quem não pescou na etapa não entra na contagem dela — senão três pessoas
+    // empatadas em zero ganhariam "2º, 3º e 4º lugar" sem ter ido pescar.
+    const colocados = montarRanking(daEtapa, pescadores).filter((r) => r.qtd > 0);
+
+    colocados.forEach((r, i) => {
+      const linha = linhas.get(r.nome);
+      if (!linha) return; // pescador saiu da lista depois da etapa
+      linha.etapas++;
+      linha.pontos += r.pontos;
+      if (i === 0) {
+        linha.vitorias++;
+        linha.ganhas.push(etapa.nome);
+      } else if (i === 1) {
+        linha.segundos++;
+      } else if (i === 2) {
+        linha.terceiros++;
+      }
+    });
+  }
+
+  return [...linhas.values()].sort(
+    (a, b) =>
+      b.vitorias - a.vitorias ||
+      b.segundos - a.segundos ||
+      b.terceiros - a.terceiros ||
+      b.pontos - a.pontos ||
+      a.nome.localeCompare(b.nome, "pt-BR")
+  );
+}
+
+/**
  * Recalcula a pontuação de todas as pescas — usado quando o grupo muda um
  * fator ou um multiplicador na tela de Ajustes.
  *

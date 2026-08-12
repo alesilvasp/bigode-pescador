@@ -14,6 +14,9 @@ import { describe, it } from "node:test";
 import { AJUSTES_PADRAO, PEIXES_PADRAO } from "../js/config.js";
 import {
   calcularPontuacao,
+  campeaoDaEtapa,
+  contarTitulos,
+  etapasComResultado,
   explicarPontuacao,
   montarRanking,
   recalcularTodas,
@@ -200,6 +203,113 @@ describe("recálculo em massa", () => {
     const pescas = [{ id: "1", tipo: "Sumido", fator: 7, pesoGramas: 100, tamanho: 10, pontuacao: 770 }];
     const [nova] = recalcularTodas(pescas, new Map(), AJUSTES_PADRAO);
     assert.equal(nova.pontuacao, 770);
+  });
+});
+
+describe("campeão da etapa", () => {
+  const pescadores = ["Ana", "Bruno"];
+
+  it("é quem lidera o ranking da etapa", () => {
+    const campeao = campeaoDaEtapa(
+      [
+        { pescador: "Ana", pontuacao: 300, pesoGramas: 100, tamanho: 10 },
+        { pescador: "Bruno", pontuacao: 900, pesoGramas: 100, tamanho: 10 },
+      ],
+      pescadores
+    );
+    assert.equal(campeao.nome, "Bruno");
+    assert.equal(campeao.pontos, 900);
+  });
+
+  it("etapa sem nenhuma pesca não tem campeão", () => {
+    // Sem isto o primeiro nome em ordem alfabética viraria campeão de uma
+    // etapa que ninguém pescou.
+    assert.equal(campeaoDaEtapa([], pescadores), null);
+  });
+});
+
+describe("vitórias e quadro de títulos", () => {
+  const pescadores = ["Ana", "Bruno", "Carla"];
+  const etapas = [
+    { id: "e1", nome: "1ª Etapa", encerrada: true },
+    { id: "e2", nome: "2ª Etapa", encerrada: true },
+    { id: "e3", nome: "Em disputa", encerrada: false },
+    { id: "e4", nome: "Encerrada vazia", encerrada: true },
+    { id: "e5", nome: "Removida", encerrada: true, removida: true },
+  ];
+  const pescas = [
+    // e1: Ana ganha, Bruno em segundo.
+    { etapaId: "e1", pescador: "Ana", pontuacao: 1000, pesoGramas: 100, tamanho: 10 },
+    { etapaId: "e1", pescador: "Bruno", pontuacao: 500, pesoGramas: 100, tamanho: 10 },
+    // e2: só o Bruno pescou.
+    { etapaId: "e2", pescador: "Bruno", pontuacao: 2000, pesoGramas: 100, tamanho: 10 },
+    // e3 ainda está aberta; e5 foi removida. Nenhuma das duas vale título.
+    { etapaId: "e3", pescador: "Carla", pontuacao: 9999, pesoGramas: 100, tamanho: 10 },
+    { etapaId: "e5", pescador: "Carla", pontuacao: 5000, pesoGramas: 100, tamanho: 10 },
+  ];
+
+  it("só valem etapas encerradas, com pesca e não removidas", () => {
+    assert.deepEqual(
+      etapasComResultado(etapas, pescas).map((e) => e.id),
+      ["e1", "e2"]
+    );
+  });
+
+  it("conta uma vitória por etapa encerrada", () => {
+    const quadro = contarTitulos(etapas, pescas, pescadores);
+    const ana = quadro.find((x) => x.nome === "Ana");
+    const bruno = quadro.find((x) => x.nome === "Bruno");
+    assert.equal(ana.vitorias, 1);
+    assert.equal(bruno.vitorias, 1);
+    assert.equal(bruno.segundos, 1);
+    assert.deepEqual(bruno.ganhas, ["2ª Etapa"]);
+  });
+
+  it("etapa aberta não dá título — o líder ainda pode mudar", () => {
+    const carla = contarTitulos(etapas, pescas, pescadores).find((x) => x.nome === "Carla");
+    assert.equal(carla.vitorias, 0);
+    assert.equal(carla.etapas, 0);
+    assert.equal(carla.pontos, 0);
+  });
+
+  it("empate em vitórias desempata pelos segundos lugares", () => {
+    const [primeiro, segundo] = contarTitulos(etapas, pescas, pescadores);
+    assert.equal(primeiro.nome, "Bruno"); // 1 vitória + 1 segundo
+    assert.equal(segundo.nome, "Ana"); // 1 vitória
+  });
+
+  it("quem ganhou etapa passa na frente de quem só somou pontos", () => {
+    const etapasB = [
+      { id: "a", nome: "A", encerrada: true },
+      { id: "b", nome: "B", encerrada: true },
+    ];
+    const pescasB = [
+      { etapaId: "a", pescador: "Ana", pontuacao: 10, pesoGramas: 10, tamanho: 1 },
+      { etapaId: "a", pescador: "Bruno", pontuacao: 5, pesoGramas: 10, tamanho: 1 },
+      { etapaId: "b", pescador: "Carla", pontuacao: 2000, pesoGramas: 10, tamanho: 1 },
+      { etapaId: "b", pescador: "Bruno", pontuacao: 1000, pesoGramas: 10, tamanho: 1 },
+    ];
+    const quadro = contarTitulos(etapasB, pescasB, pescadores);
+    // Bruno soma 1005 pontos e não ganhou nenhuma; Ana ganhou uma com 10.
+    assert.deepEqual(
+      quadro.map((x) => x.nome),
+      ["Carla", "Ana", "Bruno"]
+    );
+    assert.equal(quadro[2].pontos, 1005);
+    assert.equal(quadro[2].segundos, 2);
+  });
+
+  it("quem não pescou na etapa não recebe colocação nela", () => {
+    // Na e2 só o Bruno pescou: ninguém pode sair de lá como 2º ou 3º.
+    const quadro = contarTitulos([etapas[1]], pescas, pescadores);
+    assert.equal(quadro.find((x) => x.nome === "Ana").etapas, 0);
+    assert.ok(quadro.every((x) => x.segundos === 0 && x.terceiros === 0));
+  });
+
+  it("pesca de pescador fora da lista não quebra a contagem", () => {
+    const quadro = contarTitulos(etapas, pescas, ["Ana"]);
+    assert.equal(quadro.length, 1);
+    assert.equal(quadro[0].vitorias, 1);
   });
 });
 
