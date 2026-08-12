@@ -23,6 +23,8 @@ que abre direto no formulário. É o caminho mais rápido durante a pescaria.
 
 - 🏆 **Etapas** — cada pescaria é um campeonato com ranking próprio, e existe
   uma classificação geral somando todas.
+- 🥇 **Pódio** — o campeão da etapa em degraus e o quadro de **títulos**, que
+  mostra quem mais ganhou etapas. Vitória só conta em etapa encerrada.
 - ➕ **Registrar peixe** em poucos toques: pescador, peixe, peso (kg ou g) e
   tamanho no slider. A pontuação aparece enquanto você digita, com a conta.
 - 📷 **Foto** de cada peixe, tirada na hora ou da galeria.

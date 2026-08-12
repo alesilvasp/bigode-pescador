@@ -31,6 +31,14 @@ Também entraram, fora da lista original:
   comprimento máximo vira a **régua do formulário por espécie**: garoupa vai a
   150 cm, carapeba a 50, e continua sem cortar quem digita mais que isso. Os
   pontos de cada espécie saem da faixa de valor da tabela — ver a pendência abaixo.
+- **Interface refeita para celular** (12/08/2026) — havia **130 elementos
+  estourando a largura** numa tela de 390 px; hoje são **zero**. Saiu toda
+  `<table>` do app: seis colunas não cabem, e a de pontos ficava fora da tela.
+  Ranking, geral e títulos viraram cartões; peixes e histórico, uma linha cada,
+  com o "remover" movido para dentro do modal de edição.
+- **Armazenamento protegido** (12/08/2026) — o app pede `storage.persist()` no
+  boot, e Ajustes → Sobre mostra o estado. Sem isso o sistema podia descartar as
+  pescas registradas offline se o espaço do celular apertasse.
 - **Fórmula oficial nova** (12/08/2026) — `pontos da espécie + comprimento(cm)
   + peso(g) ÷ 100`, com **bônus de +300** por cinco espécies diferentes na etapa
   e **baiacu −100** fixo por exemplar. Substituiu `fator × peso + fator ×
@@ -135,7 +143,21 @@ corrigidos**, testes de 31 → 48. Detalhe técnico de cada um está nas
 
 ## Pendências com o grupo (não são código)
 
-### 🎣 Aberta: quanto vale cada espécie na fórmula nova
+### 🔑 Aberta: acesso ao banco, com o Alex
+
+**Nenhum aparelho do Felipe está sincronizado** — nem PC nem celular. O botão
+"Copiar link de acesso" só aparece para quem já está configurado, então ele não
+consegue gerar. O Supabase é do **Alex**; ele foi acionado em 12/08/2026.
+
+Serve o **link de acesso** do app dele, ou **Project URL** + chave **`anon`
+`public`** (Supabase → Project Settings → API). Nunca a `service_role`.
+
+Enquanto isso: as **16 pescas do 1º semestre existem só no Chrome do PC** do
+Felipe, e **ninguém nunca conseguiu ver o conteúdo do banco do grupo** — não se
+sabe se sobrou registro de teste de 11/08. Assim que o chip virar 🟢, as pescas
+sobem sozinhas e dá para conferir e limpar.
+
+### ✅ Decidido: quanto vale cada espécie (ajustável no app)
 
 A tabela de pontuação que o Rodrigo mandou em 12/08/2026 traz a **fórmula**
 (`pontos da espécie + comprimento + peso ÷ 100`), o **bônus** de +300 por cinco
@@ -175,12 +197,13 @@ cor. Mas são os do 19 ao 23"* — sororoca, corvina, pescada, sargo e carapeba.
 medição de cor não separava esses tons do azul médio, então essa resposta foi o
 que fechou a classificação das 32 espécies.
 
-### ⚖️ Aberta: o peso dominar é intencional?
+### ✅ Resolvido: o peso dominava a fórmula
 
-Como entra em gramas, um robalo de 2 kg dá 10.350 pontos e o tamanho vira 3% do
-total — na prática o campeonato vira "quem pegou o mais pesado". Dá para
-equilibrar em **Ajustes → Calibragem** sem tocar no código: multiplicador de peso
-`0,001` faz o peso contar em kg.
+Era a pendência de 11/08 — o peso valia **98%** da nota, e um peixe curto e gordo
+ganhava de um robalo comprido. O **Alex** levou ao grupo e o **Rodrigo** respondeu
+com a tabela de pontuação nova, que redistribuiu a conta: no robalo de 4,3 kg do
+exemplo dele, espécie 72%, comprimento 17%, peso 10%. Há teste guardando esse
+equilíbrio, para não se perder de novo.
 
 ### ✅ Resolvidas relendo as mensagens
 
