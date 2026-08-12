@@ -97,10 +97,13 @@ O `outbox` só recebe itens se houver Supabase configurado; quem liga depois usa
 faz falta para o ranking. Por isso `aplicarRemoto()` preserva o `fotoId` local
 quando o registro volta do servidor.
 
-> ⚠️ **Ao adicionar/alterar tabela no banco, re-rode o `supabase/schema.sql`** no
-> SQL Editor (é idempotente). A tabela `pescadores` foi adicionada depois do
-> setup inicial — quem provisionou antes precisa rodar de novo, senão o sync de
-> pescadores dá 404 na tabela.
+> ⚠️ **Ao adicionar/alterar tabela ou gatilho no banco, re-rode o
+> `supabase/schema.sql`** no SQL Editor (é idempotente). Vale para gatilho, não
+> só para tabela: código corrigido com banco antigo deixa o defeito vivo em
+> produção sem dar erro em lugar nenhum.
+>
+> O banco do grupo está **em dia** — última aplicação em 12/08/2026, pelo Alex,
+> cobrindo a tabela `pescadores` e o gatilho `carimbar_atualizacao`.
 
 ## Convenções
 
@@ -174,9 +177,9 @@ quando o registro volta do servidor.
     do PostgREST sobrescreve sem olhar data: a lista de peixes padrão que um
     celular novo cria (carimbada em 1970 de propósito) ressuscitava, para o
     grupo inteiro, peixe que já tinha sido tirado da lista. O gatilho
-    `carimbar_atualizacao` agora devolve `old` nesse caso. **Quem provisionou
-    antes precisa re-rodar o `schema.sql`.**
-
+    `carimbar_atualizacao` agora devolve `old` nesse caso. O gatilho é
+    `before update`, então o `old` sempre existe. **Já aplicado no banco do
+    grupo em 12/08/2026.**
 16. **`abrir()` e `fechar()` moram em `ui.js`, não em `modais.js`.** O `pwa.js`
     abre o modal de instalação; se ele importasse `modais.js` para isso,
     fecharia um ciclo entre os dois módulos. Quem for criar modal novo importa

@@ -66,8 +66,9 @@ Varredura do app inteiro, com o fluxo real rodando no navegador. **15 defeitos
 corrigidos**, testes de 31 → 48. Detalhe técnico de cada um está nas
 "Armadilhas já resolvidas" do [`CLAUDE.md`](CLAUDE.md).
 
-> ⚠️ **Re-rode o `supabase/schema.sql`** no SQL Editor. O gatilho de carimbo
-> mudou (ver item 4 abaixo). É idempotente, rodar de novo não quebra nada.
+> ✅ **O `supabase/schema.sql` já foi re-rodado** pelo Alex em 12/08/2026. Era o
+> que faltava para o item 4 valer em produção: o gatilho de carimbo mudou, e sem
+> rodar o SQL o defeito continuava vivo no banco mesmo com o código corrigido.
 
 ### Perdiam dado, em silêncio
 
