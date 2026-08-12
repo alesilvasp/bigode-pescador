@@ -26,6 +26,10 @@ Também entraram, fora da lista original:
 - **Importar JSON** — contrapartida do export.
 - **Recordes e destaque do líder**.
 - **Testes** da regra de pontuação (`npm test`).
+- **Convite para instalar** — quem abre o link no celular vê uma faixa
+  explicando o ganho e, num toque, o passo a passo da plataforma. Antes a
+  única porta era um botão escondido em Ajustes que abria um `alert()`, e
+  ninguém instalava sem alguém explicar por fora.
 
 ---
 

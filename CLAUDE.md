@@ -32,7 +32,7 @@ tests/        testes da pontuação
 | `pontuacao.js` | **a regra do campeonato** e o ranking |
 | `db.js` | IndexedDB: pescas, etapas, peixes, fotos, fila de sync |
 | `estado.js` | modelo em memória + operações; única porta de escrita |
-| `ui.js` | renderização das telas |
+| `ui.js` | renderização das telas; também abre e fecha modais |
 | `modais.js` | formulários (pesca, etapa, peixe, boas-vindas) |
 | `ajustes.js` | tela de ajustes, export/import, convite |
 | `sync.js` | sincronização com o Supabase |
@@ -176,6 +176,20 @@ quando o registro volta do servidor.
     grupo inteiro, peixe que já tinha sido tirado da lista. O gatilho
     `carimbar_atualizacao` agora devolve `old` nesse caso. **Quem provisionou
     antes precisa re-rodar o `schema.sql`.**
+
+16. **`abrir()` e `fechar()` moram em `ui.js`, não em `modais.js`.** O `pwa.js`
+    abre o modal de instalação; se ele importasse `modais.js` para isso,
+    fecharia um ciclo entre os dois módulos. Quem for criar modal novo importa
+    de `ui.js`. Há também `temModalAberto()`, usado para não empilhar um modal
+    em cima de outro na primeira abertura.
+17. **O convite de instalação é só para celular** (`pointer: coarse` + tela
+    estreita). Num PC o app até instala, mas o ganho real — abrir sem sinal na
+    beira do rio, ícone na mão — é do celular, e a faixa só atrapalharia. Quem
+    dispensa não vê de novo por 14 dias; o botão em Ajustes continua valendo.
+18. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+    Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
+    navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
+    sem esse aviso a pessoa procura um menu que não existe e desiste.
 
 ## Estado do roadmap
 
