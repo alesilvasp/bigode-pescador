@@ -161,8 +161,11 @@ Duas espécies fogem da faixa de propósito, porque **fala do Rodrigo vence cor*
   trunfo" (*"colocaria 10 pontos"*, contra 5 do robalo). A tabela nova não tem
   faixa de super trunfo.
 
-Confirmado, é trocar número no `js/config.js` e o teste correspondente. Enquanto
-não vier, o grupo pode calibrar direto em **Ajustes → Peixes e pontos**.
+**Decisão do Felipe (12/08/2026): fica como está.** Não é para cobrar o Rodrigo
+nem segurar nada por causa disso — se algum valor parecer desproporcional numa
+pescaria, o grupo ajusta na hora em **Ajustes → Peixes e pontos**, que grava e
+sincroniza para todos. Se um dia ele confirmar outros números, é trocar no
+`js/config.js` e o teste correspondente.
 
 ### ✅ Respondida: a faixa "Valor Padrão" (azul claro)
 
