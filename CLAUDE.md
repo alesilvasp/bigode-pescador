@@ -68,29 +68,31 @@ antes de ajustar o teste.
 O campo que guarda os pontos da espécie continua chamando `fator`, porque
 renomear exigiria coluna nova no banco — e SQL só o Alex roda.
 
-**Cada fator tem fonte registrada em comentário no `config.js`** — a fala do
+**Cada valor tem fonte registrada em comentário no `config.js`** — a fala do
 Rodrigo ou do Alex que o originou. Não altere sem falar com o Rodrigo; ele é a
-autoridade sobre pontuação. A **Corvina** é a única sem confirmação dele (ver
-`BACKLOG.md`).
+autoridade sobre pontuação. Hoje só o **300** do alto valor é confirmado por ele;
+as outras faixas são derivadas e estão no `BACKLOG.md` esperando resposta.
 
 #### A tabela oficial das espécies (Rodrigo, 12/08/2026)
 
 Ele mandou no grupo uma tabela com **32 espécies**, cada uma com nome
 científico, comprimento máximo e uma **faixa de valor por cor**. A tabela **não
-traz número de fator** — traz faixa. O mapa usado é o que reproduz os quatro
-fatores que ele já havia dado:
+traz o valor de cada espécie** — traz faixa. Só o alto valor tem âncora oficial,
+do exemplo de cálculo (Robalo Flecha = 300); o resto é derivado e espera
+confirmação (ver `BACKLOG.md`):
 
-| Faixa (cor na tabela) | Fator | Confere com |
+| Faixa (cor na tabela) | Pontos | Situação |
 |---|:--:|---|
-| Alto Valor Esportivo (azul-marinho) | 5 | Robalo, Caranha, Traíra |
-| Médio Valor (azul) | 4 | Corvina |
-| Bagres e Menor Valor (cinza) | 2 | Bagre |
-| Penalidade (vermelho) | −0,5 | Baiacu |
+| Alto Valor Esportivo (azul-marinho) | 300 | ✅ âncora oficial |
+| Médio Valor (azul) | 200 | derivado |
+| Valor Padrão (azul claro) | 100 | derivado; o Alex confirmou que são os cards 19 a 23 |
+| Bagres e Menor Valor (cinza) | 50 | derivado |
+| Penalidade (vermelho) | −100 | ✅ oficial, fixo por exemplar |
 
-Duas exceções propositais, porque **fala dele vence cor**: a **Pescada** segue
-**5** (*"mesmo peso de caranha e pescada e robalo"*) embora a tabela a pinte como
-Médio Valor, e o **Peixe Galo** segue **10** (o "super trunfo"), que não tem
-faixa correspondente. As duas estão no `BACKLOG.md` esperando confirmação.
+Duas exceções propositais, porque **fala dele vence cor**: a **Pescada** vale
+**300** (*"mesmo peso de caranha e pescada e robalo"*) embora a cor a coloque em
+Valor Padrão, e o **Peixe Galo** vale **600** — o dobro do robalo, mantendo a
+proporção do "super trunfo" (*"colocaria 10 pontos"*, contra 5 do robalo).
 
 A lista foi de 8 para **34**: as 32 da tabela, mais "Robalo" e "Bagre"
 genéricos. Os genéricos ficam porque **a chave do peixe é o nome** e as pescas
@@ -105,13 +107,15 @@ volta do servidor — senão a primeira sincronização apagaria a tabela toda.
 Dois modos de peixe:
 - `formula` — a conta acima.
 - `fixa` — vale `pontosFixos`, ignorando peso e tamanho. Ao escolher um desses,
-  os campos de peso e tamanho somem do formulário. **Nenhum peixe padrão usa
-  este modo**; ele existe para o grupo cadastrar um assim pela tela de Ajustes.
+  os campos de peso e tamanho somem do formulário. O **baiacu** é o único peixe
+  padrão nesse modo, com −100 por exemplar; o grupo pode cadastrar outros pela
+  tela de Ajustes.
 
 Os multiplicadores em `ajustes` existem só para calibragem pela interface. Ambos
 em `1` = regra original intacta.
 
-> ⚠️ Mudar fator ou multiplicador **recalcula todas as pescas já registradas**.
+> ⚠️ Mudar pontos de espécie ou multiplicador **recalcula todas as pescas já
+> registradas**.
 > É intencional: campeonato inteiro sob a mesma régua. Difere da v1, que
 > congelava a pontuação no momento do registro.
 
@@ -290,12 +294,20 @@ quando o registro volta do servidor.
     `CARIMBO_SEED` — e **enfileira**, então o primeiro aparelho que abrir a
     versão nova corrige o banco para todos. Fator que o grupo editou na tela
     fica de pé.
-23. **Pontuação de pesca é SNAPSHOT: mudar a fórmula não recalcula sozinho.**
+23. **Migração de escala tem que cobrir TODA a lista, não só o que mudou de
+    regra.** A v2.4.0 entrou com as 26 espécies novas ainda na escala velha
+    (Robalo Flecha 5, Sororoca 4) e a v2.5.0, uma hora depois, migrava só os 8
+    nomes originais. Resultado em produção: o simulador de Ajustes mostrava 415
+    (usa valor fixo) e o FORMULÁRIO calculava `5 + 72 + 43 = 120` para o mesmo
+    peixe. `ESCALA_ANTIGA` agora tem as 34 espécies, há teste exigindo que
+    nenhuma fique fora, e a chave da migração no localStorage é **versionada** —
+    sem isso quem já tinha migrado nunca rodaria de novo.
+24. **Pontuação de pesca é SNAPSHOT: mudar a fórmula não recalcula sozinho.**
     Cada pesca guarda o número, e o ranking só soma. Sem recalcular, a etapa do
     1º semestre continuaria mostrando 12.795 pontos para quem, na regra nova,
     fez 2.112. Quem muda regra em release tem que rodar `recalcularTodas()` na
     migração — é o que a tela de Ajustes já faz ao mexer na calibragem.
-24. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+25. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.

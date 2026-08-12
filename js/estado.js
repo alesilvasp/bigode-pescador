@@ -14,7 +14,7 @@ import {
   novoId,
 } from "./config.js";
 import * as db from "./db.js";
-import { calcularPontuacao, recalcularTodas } from "./pontuacao.js";
+import { calcularPontuacao, migrarPeixeDeEscala, recalcularTodas } from "./pontuacao.js";
 
 // ---- Estado em memória ----------------------------------------------------
 
@@ -229,18 +229,9 @@ async function migrarEscalaDePontos() {
   const mudados = [];
 
   for (const peixe of await db.listar(db.STORES.peixes)) {
-    const valorAntigo = ESCALA_ANTIGA[peixe.nome];
-    const padrao = padraoPorNome.get(peixe.nome);
-    if (valorAntigo === undefined || !padrao) continue; // espécie sem escala antiga
-    if (Number(peixe.fator) !== valorAntigo) continue; // editado pelo grupo: respeita
-
-    mudados.push({
-      ...peixe,
-      fator: padrao.fator,
-      modo: padrao.modo,
-      pontosFixos: padrao.pontosFixos ?? peixe.pontosFixos ?? 0,
-      atualizadaEm: new Date().toISOString(),
-    });
+    const troca = migrarPeixeDeEscala(peixe, padraoPorNome.get(peixe.nome), ESCALA_ANTIGA);
+    if (!troca) continue;
+    mudados.push({ ...peixe, ...troca, atualizadaEm: new Date().toISOString() });
   }
 
   if (mudados.length) {

@@ -18,6 +18,7 @@ import {
   contarTitulos,
   etapasComResultado,
   explicarPontuacao,
+  migrarPeixeDeEscala,
   montarRanking,
   recalcularTodas,
 } from "../js/pontuacao.js";
@@ -240,6 +241,66 @@ describe("escala antiga, usada só para migrar", () => {
     assert.equal(ESCALA_ANTIGA["Bagre"], 2);
     assert.equal(ESCALA_ANTIGA["Peixe Galo"], 10);
     assert.equal(ESCALA_ANTIGA["Baiacu"], -0.5);
+  });
+
+  it("cobre TODAS as espécies padrão, não só as 8 originais", () => {
+    // Foi exatamente esta falha em produção: a v2.4.0 semeou as 26 espécies
+    // novas já na escala velha (Robalo Flecha 5, Sororoca 4…), a migração só
+    // conhecia os 8 nomes antigos e o formulário passou a calcular
+    // `5 + 72 + 43 = 120` para um robalo que devia dar 415. O simulador, que
+    // usa valor fixo, mostrava 415 e escondia o problema.
+    const semEscala = PEIXES_PADRAO.filter((p) => ESCALA_ANTIGA[p.nome] === undefined);
+    assert.deepEqual(semEscala.map((p) => p.nome), [], "espécies fora da migração");
+  });
+
+  it("a escala antiga da v2.4.0 está completa nas três faixas", () => {
+    assert.equal(ESCALA_ANTIGA["Robalo Flecha"], 5);
+    assert.equal(ESCALA_ANTIGA["Sororoca"], 4); // era médio; virou padrão depois
+    assert.equal(ESCALA_ANTIGA["Tainha"], 2);
+  });
+
+  describe("decisão de migrar cada peixe", () => {
+    const padrao = (nome) => PEIXES_PADRAO.find((p) => p.nome === nome);
+
+    it("peixe no valor antigo migra para os pontos novos", () => {
+      const local = { nome: "Robalo Flecha", fator: 5, modo: "formula" };
+      const troca = migrarPeixeDeEscala(local, padrao("Robalo Flecha"), ESCALA_ANTIGA);
+      assert.equal(troca.fator, 300);
+      assert.equal(troca.modo, "formula");
+    });
+
+    it("todas as 34 espécies migram, vindas da v2.4.0", () => {
+      // Este é o caso que escapou: as espécies novas tinham sido semeadas na
+      // escala velha e ficaram de fora da primeira migração.
+      for (const p of PEIXES_PADRAO) {
+        const local = { nome: p.nome, fator: ESCALA_ANTIGA[p.nome], modo: "formula" };
+        const troca = migrarPeixeDeEscala(local, p, ESCALA_ANTIGA);
+        assert.ok(troca, `${p.nome} não migraria`);
+        assert.equal(troca.fator, p.fator, p.nome);
+      }
+    });
+
+    it("baiacu migra para pontuação fixa de -100", () => {
+      const local = { nome: "Baiacu", fator: -0.5, modo: "formula", pontosFixos: 0 };
+      const troca = migrarPeixeDeEscala(local, padrao("Baiacu"), ESCALA_ANTIGA);
+      assert.equal(troca.modo, "fixa");
+      assert.equal(troca.pontosFixos, -100);
+    });
+
+    it("fator editado pelo grupo NÃO é sobrescrito", () => {
+      const local = { nome: "Robalo", fator: 7, modo: "formula" }; // 7 não é o antigo
+      assert.equal(migrarPeixeDeEscala(local, padrao("Robalo"), ESCALA_ANTIGA), null);
+    });
+
+    it("peixe já na escala nova fica como está", () => {
+      const local = { nome: "Robalo", fator: 300, modo: "formula" };
+      assert.equal(migrarPeixeDeEscala(local, padrao("Robalo"), ESCALA_ANTIGA), null);
+    });
+
+    it("peixe cadastrado pelo grupo, fora da tabela, não é tocado", () => {
+      const local = { nome: "Dourado", fator: 5, modo: "formula" };
+      assert.equal(migrarPeixeDeEscala(local, { nome: "Dourado", fator: 5 }, ESCALA_ANTIGA), null);
+    });
   });
 
   it("nenhum valor da escala antiga sobrou na lista de peixes", () => {

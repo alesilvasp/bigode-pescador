@@ -162,18 +162,64 @@ end $$;
 
 
 -- ---- Peixes iniciais -----------------------------------------------------
--- Os fatores combinados no grupo. Quem decide é o Rodrigo.
+-- A tabela oficial das espécies, que o Rodrigo fechou em 12/08/2026. Quem
+-- decide é ele.
+--
+-- ⚠️ A coluna `fator` guarda os PONTOS DA ESPÉCIE da fórmula oficial:
+--
+--       pontuação = pontos da espécie + comprimento(cm) + peso(g) / 100
+--
+-- O nome ficou de quando a regra era `fator × peso + fator × tamanho`. Renomear
+-- a coluna quebraria os mapeadores do app, então ela continua `fator`.
+--
+-- Só o alto valor (300) tem âncora oficial, do exemplo de cálculo da tabela
+-- (Robalo Flecha, 72 cm, 4.300 g = 415). O resto da escala é derivado das faixas
+-- de cor e espera confirmação — ver BACKLOG.md.
+--
 -- "on conflict do nothing" = se já existir, não sobrescreve edições do grupo.
+-- Rodar isto num banco que já tem os peixes NÃO desfaz a escala nova; e o app
+-- também migra sozinho quem ficou com os valores antigos.
 
 insert into public.peixes (nome, fator, modo, pontos_fixos, trofeu, penalidade) values
-  ('Robalo',       5,    'formula', 0, false, false),  -- Rodrigo: "robalo - 5"
-  ('Caranha',      5,    'formula', 0, false, false),  -- "mesmo peso de caranha e pescada e robalo"
-  ('Pescada',      5,    'formula', 0, false, false),  -- idem
-  ('Traíra',       5,    'formula', 0, false, false),  -- Alex "Traíra? 5?" / Rodrigo "sim sim"
-  ('Corvina',      4,    'formula', 0, false, false),  -- ⚠️ sem confirmação do Rodrigo
-  ('Bagre',        2,    'formula', 0, false, false),  -- Rodrigo: "bagre - 2"
-  ('Peixe Galo',  10,    'formula', 0, true,  false),  -- "super trunfo... 10 pontos"
-  ('Baiacu',      -0.5,  'formula', 0, false, true)    -- "coloca baiacu menos 0,5"
+  -- Alto valor esportivo — 300
+  ('Robalo',           300, 'formula',    0, false, false),  -- genérico: as pescas antigas usam este nome
+  ('Robalo Flecha',    300, 'formula',    0, false, false),  -- âncora oficial da tabela
+  ('Robalo Peva',      300, 'formula',    0, false, false),
+  ('Caranha',          300, 'formula',    0, false, false),  -- "mesmo peso de caranha e pescada e robalo"
+  ('Pescada',          300, 'formula',    0, false, false),  -- idem; a cor da tabela diria 100
+  ('Traíra',           300, 'formula',    0, false, false),  -- Alex "Traíra? 5?" / Rodrigo "sim sim"
+  ('Garoupa',          300, 'formula',    0, false, false),
+  ('Badejo',           300, 'formula',    0, false, false),
+  ('Linguado',         300, 'formula',    0, false, false),
+  ('Anchova',          300, 'formula',    0, false, false),
+  ('Olhete',           300, 'formula',    0, false, false),
+  ('Tucunaré',         300, 'formula',    0, false, false),
+  -- Médio valor — 200
+  ('Xaréu',            200, 'formula',    0, false, false),
+  ('Cioba',            200, 'formula',    0, false, false),
+  ('Bonito',           200, 'formula',    0, false, false),
+  ('Pescada Amarela',  200, 'formula',    0, false, false),
+  ('Pampo',            200, 'formula',    0, false, false),
+  ('Vermelho',         200, 'formula',    0, false, false),
+  ('Serra',            200, 'formula',    0, false, false),
+  ('Jundiá',           200, 'formula',    0, false, false),
+  -- Valor padrão — 100 (cards 19 a 23, confirmados pelo Alex)
+  ('Sororoca',         100, 'formula',    0, false, false),
+  ('Corvina',          100, 'formula',    0, false, false),
+  ('Sargo',            100, 'formula',    0, false, false),
+  ('Carapeba',         100, 'formula',    0, false, false),
+  -- Bagres e menor valor — 50
+  ('Bagre',             50, 'formula',    0, false, false),  -- genérico
+  ('Bagre Bandeira',    50, 'formula',    0, false, false),
+  ('Bagre Amarelo',     50, 'formula',    0, false, false),
+  ('Bagre Marinho',     50, 'formula',    0, false, false),
+  ('Bagre Branco',      50, 'formula',    0, false, false),
+  ('Mandi',             50, 'formula',    0, false, false),
+  ('Tainha',            50, 'formula',    0, false, false),
+  ('Parati',            50, 'formula',    0, false, false),
+  -- Troféu e penalidade
+  ('Peixe Galo',       600, 'formula',    0, true,  false),  -- "super trunfo": o dobro do robalo
+  ('Baiacu',          -100, 'fixa',    -100, false, true)    -- -100 por exemplar, fixo
 on conflict (nome) do nothing;
 
 

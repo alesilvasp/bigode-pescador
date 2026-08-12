@@ -35,32 +35,39 @@ que abre direto no formulário. É o caminho mais rápido durante a pescaria.
 
 ## Pontuação
 
-A regra é do Rodrigo:
+A regra é do Rodrigo, da **tabela oficial das espécies** que ele fechou em
+12/08/2026:
 
 ```
-pontuação = fator do peixe × peso(g) + fator do peixe × tamanho(cm)
+pontuação = pontos da espécie + comprimento(cm) + peso(g) ÷ 100
 ```
 
-Exemplo dele: Robalo (fator 5) de 100 g e 45 cm → `5×100 + 5×45` = **725 pontos**.
+Exemplo da própria tabela: Robalo Flecha de 72 cm e 4.300 g →
+`300 + 72 + 43` = **415 pontos**.
 
-| Peixe | Fator | De onde veio |
+E vêm com ela duas regras que mudam como se pesca:
+
+- 🎯 **Bônus:** quem pegar **5 espécies diferentes** na etapa leva **+300**.
+  Variedade passou a valer mais que insistir no mesmo peixe.
+- ⚠️ **Penalidade:** cada **baiacu** tira **100 pontos**, não importa o tamanho.
+
+| Faixa da tabela | Pontos | Espécies |
 |---|:--:|---|
-| Peixe Galo 🏆 | 10 | Rodrigo: *"os super trunfo, tipo, peixe galo… colocaria 10 pontos"* |
-| Robalo | 5 | Rodrigo: *"fator de relevância do peixe (robalo - 5 / bagre - 2)"* |
-| Caranha, Pescada | 5 | Rodrigo: *"mesmo peso de caranha e pescada e robalo"* |
-| Traíra | 5 | Alex: *"Traíra? 5?"* → Rodrigo: *"sim sim"* |
-| Corvina | 4 | Alex, 11/08 — único que não veio do Rodrigo |
-| Bagre | 2 | Rodrigo: *"robalo - 5 / bagre - 2"* |
-| Baiacu ⚠️ | −0,5 | Rodrigo: *"a coloca baiacu menos 0,5"* |
+| Peixe Galo 🏆 | 600 | o "super trunfo": o dobro do robalo |
+| Alto valor esportivo | 300 | robalo (flecha e peva), caranha, pescada, traíra, garoupa, badejo, linguado, anchova, olhete, tucunaré |
+| Médio valor | 200 | xaréu, cioba, bonito, pescada amarela, pampo, vermelho, serra, jundiá |
+| Valor padrão | 100 | sororoca, corvina, sargo, carapeba |
+| Bagres e menor valor | 50 | tainha, os 4 bagres, mandi, parati |
+| Baiacu ⚠️ | −100 | fixo, por exemplar |
 
-Tudo editável em **Ajustes → Peixes e fatores**, incluindo cadastrar peixe novo —
-por fórmula ou com **pontuação fixa** (vale sempre o mesmo, independentemente de
-peso e tamanho).
+São **34 espécies** cadastradas, cada uma com nome científico e comprimento
+máximo — e é esse máximo que ajusta a régua do formulário: garoupa vai até
+150 cm, carapeba até 50. Tudo editável em **Ajustes → Peixes e pontos**.
 
-> ℹ️ Como o peso entra em **gramas**, ele domina o resultado: um robalo de 2 kg
-> dá 10.350 pontos e o tamanho vira 3% do total. É a regra combinada no grupo —
-> se quiserem equilibrar, dá para mexer em **Ajustes → Calibragem** sem tocar no
-> código (multiplicador de peso `0,001` faz o peso contar em kg).
+> ℹ️ A regra anterior era `fator × peso + fator × tamanho`, e nela o **peso valia
+> 98%** da nota: peixe curto e gordo ganhava de robalo comprido. A fórmula nova
+> equilibra — no robalo de 4,3 kg do exemplo, a espécie vale 72%, o comprimento
+> 17% e o peso 10%.
 
 ## Sincronizar entre os celulares
 

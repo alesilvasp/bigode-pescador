@@ -120,20 +120,60 @@ export const PEIXES_PADRAO = [
 
 /**
  * Pontos que cada espécie tinha na escala ANTIGA (`fator × peso + fator ×
- * tamanho`, até 11/08/2026).
+ * tamanho`), até a fórmula nova de 12/08/2026.
  *
- * Serve só para migrar: o banco do grupo guarda esses valores e, como o
- * registro do servidor vence o padrão local, um robalo de 1,5 m daria
- * `5 + 51 + 15 = 71` pontos em vez de 366. A migração troca **apenas** quem
- * está exatamente nesses números — fator que o grupo editou é respeitado.
+ * Serve só para migrar, e cobre as 34 espécies porque há DOIS jeitos de um
+ * aparelho estar com valor velho:
+ *
+ *   1. O banco do grupo guarda os 8 originais (Robalo 5, Bagre 2…), e registro
+ *      do servidor vence padrão semeado local.
+ *   2. Quem abriu a **v2.4.0** — publicada uma hora antes da fórmula nova, no
+ *      mesmo dia — semeou as 26 espécies novas já com a escala velha (Robalo
+ *      Flecha 5, Sororoca 4…). Esse caso passou batido no primeiro teste: o
+ *      simulador mostrava 415 certo e o FORMULÁRIO calculava
+ *      `5 + 72 + 43 = 120` para o mesmo peixe.
+ *
+ * A migração troca **apenas** quem está exatamente nesses números — fator que o
+ * grupo editou na tela é decisão deles e fica de pé.
  */
 export const ESCALA_ANTIGA = {
+  // alto valor esportivo valia 5
   Robalo: 5,
+  "Robalo Flecha": 5,
+  "Robalo Peva": 5,
   Caranha: 5,
   Pescada: 5,
   Traíra: 5,
+  Garoupa: 5,
+  Badejo: 5,
+  Linguado: 5,
+  Anchova: 5,
+  Olhete: 5,
+  Tucunaré: 5,
+  // médio valor valia 4 — a faixa "padrão" só existiu depois, com a resposta
+  // do Alex sobre os cards 19 a 23
   Corvina: 4,
+  Xaréu: 4,
+  Cioba: 4,
+  Bonito: 4,
+  "Pescada Amarela": 4,
+  Pampo: 4,
+  Vermelho: 4,
+  Serra: 4,
+  Sororoca: 4,
+  Sargo: 4,
+  Carapeba: 4,
+  Jundiá: 4,
+  // bagres e menor valor valiam 2
   Bagre: 2,
+  "Bagre Bandeira": 2,
+  "Bagre Amarelo": 2,
+  "Bagre Marinho": 2,
+  "Bagre Branco": 2,
+  Mandi: 2,
+  Tainha: 2,
+  Parati: 2,
+  // troféu e penalidade
   "Peixe Galo": 10,
   Baiacu: -0.5,
 };
@@ -165,7 +205,10 @@ export const CHAVES = {
   pescadores: "bigode-pescador:pescadores",
   supabase: "bigode-pescador:supabase", // { url, anonKey } opcional
   migrado: "bigode-pescador:migrado-v2",
-  escalaPontos: "bigode-pescador:escala-pontos-2026-08-12", // migração da escala
+  // Migração da escala de pontos. A chave tem versão porque a primeira rodada
+  // cobria só os 8 peixes originais e deixou as 26 espécies novas na escala
+  // velha; trocar a chave faz a migração rodar de novo em quem já tinha aberto.
+  escalaPontos: "bigode-pescador:escala-pontos-v2",
   conviteInstalar: "bigode-pescador:convite-instalar", // quando dispensaram o convite
   jaEnsinouInstalar: "bigode-pescador:ja-ensinou-instalar",
   // chaves da v1, lidas uma única vez na migração

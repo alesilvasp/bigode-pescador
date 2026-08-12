@@ -225,6 +225,35 @@ export function contarTitulos(etapas, pescas, pescadores, ajustes = AJUSTES_PADR
 }
 
 /**
+ * Decide se um peixe guardado no aparelho ficou na escala de pontos ANTIGA e,
+ * se sim, devolve os campos que precisam ser trocados. `null` = deixa como está.
+ *
+ * Vive aqui, pura, porque é a regra que impede o placar de sair errado — e
+ * regra dessas precisa de teste. Já falhou uma vez em produção por cobrir só
+ * parte da lista: o simulador mostrava 415 e o formulário calculava 120 para o
+ * mesmo peixe.
+ *
+ * @param {object} local  - peixe como está no IndexedDB
+ * @param {object} padrao - o mesmo peixe em PEIXES_PADRAO
+ * @param {object} escalaAntiga - nome → valor que a espécie tinha antes
+ */
+export function migrarPeixeDeEscala(local, padrao, escalaAntiga) {
+  if (!local || !padrao) return null;
+
+  const valorAntigo = escalaAntiga?.[local.nome];
+  if (valorAntigo === undefined) return null; // espécie sem escala anterior
+
+  // Valor diferente do antigo = o grupo editou na tela. Decisão deles.
+  if (Number(local.fator) !== valorAntigo) return null;
+
+  return {
+    fator: padrao.fator,
+    modo: padrao.modo,
+    pontosFixos: padrao.pontosFixos ?? local.pontosFixos ?? 0,
+  };
+}
+
+/**
  * Recalcula a pontuação de todas as pescas — usado quando o grupo muda um
  * fator ou um multiplicador na tela de Ajustes.
  *
