@@ -66,6 +66,50 @@ function oferecerAtualizacao(worker) {
 }
 
 /** Verificação manual, pelo botão em Ajustes. */
+/**
+ * Pede ao navegador para NÃO descartar os dados do app.
+ *
+ * Por padrão o armazenamento é "best-effort": se o celular ficar sem espaço, o
+ * sistema apaga banco de site sem avisar ninguém. É exatamente o cenário da
+ * pescaria — horas offline, com foto de cada peixe ocupando espaço, e a fila de
+ * envio esperando sinal. Marcado como persistente, o navegador só apaga se a
+ * pessoa mandar apagar.
+ *
+ * O Chrome concede sem perguntar nada quando o app está instalado na tela
+ * inicial. O Safari do iPhone não tem esta API, mas lá o app instalado já é
+ * poupado da limpeza automática — nos dois casos, instalar é o que protege.
+ *
+ * @returns {Promise<boolean|null>} null = navegador sem suporte
+ */
+export async function protegerArmazenamento() {
+  if (!navigator.storage?.persist) return null;
+
+  try {
+    if (await navigator.storage.persisted()) return true;
+    const concedido = await navigator.storage.persist();
+    console.info(
+      concedido
+        ? "[armazenamento] protegido: o sistema não vai descartar as pescas"
+        : "[armazenamento] não protegido — instale o app na tela inicial"
+    );
+    return concedido;
+  } catch (e) {
+    console.warn("[armazenamento] não deu para pedir persistência:", e);
+    return null;
+  }
+}
+
+/** Quanto já está guardado neste aparelho, para mostrar em Ajustes. */
+export async function usoDeArmazenamento() {
+  if (!navigator.storage?.estimate) return null;
+  try {
+    const { usage, quota } = await navigator.storage.estimate();
+    return { usado: usage ?? 0, cota: quota ?? 0 };
+  } catch {
+    return null;
+  }
+}
+
 export async function buscarAtualizacao() {
   if (!registroSW) {
     toast("Service worker não está ativo aqui.", "erro");

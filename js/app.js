@@ -78,6 +78,11 @@ async function iniciar() {
   // ---- PWA e sincronização
   pwa.registrarServiceWorker();
 
+  // Pede armazenamento protegido logo no boot: o pessoal registra peixe sem
+  // sinal e bloqueia o celular, e a fila pode ficar horas esperando rede. Sem
+  // isso o sistema tem permissão de apagar tudo se o espaço apertar.
+  pwa.protegerArmazenamento();
+
   // Link de convite tem prioridade: pode ser a primeira vez deste aparelho.
   aplicarConviteDaUrl();
 

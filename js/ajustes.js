@@ -18,6 +18,7 @@ import {
 } from "./estado.js";
 import { calcularPontuacao, explicarPontuacao, montarRanking } from "./pontuacao.js";
 import * as exportar from "./exportar.js";
+import * as pwa from "./pwa.js";
 import * as sync from "./sync.js";
 import { $, esc, toast } from "./ui.js";
 import { abrirModalPeixe } from "./modais.js";
@@ -161,6 +162,42 @@ function renderizarSobre() {
   $("#info-sobre").innerHTML =
     `Versão ${esc(VERSAO_APP)} · rodando no ${esc(modo)}<br>` +
     `${total} ${total === 1 ? "pesca guardada" : "pescas guardadas"} neste aparelho`;
+
+  mostrarArmazenamento();
+}
+
+/**
+ * Diz se o sistema pode ou não descartar as pescas deste aparelho.
+ *
+ * É a resposta para "vou registrar sem sinal e bloquear o celular, não perco?".
+ * Fica assíncrono porque a API é assíncrona; a tela já apareceu quando isto
+ * chega, e escrever depois não atrapalha ninguém.
+ */
+async function mostrarArmazenamento() {
+  const [protegido, uso] = await Promise.all([
+    pwa.protegerArmazenamento(),
+    pwa.usoDeArmazenamento(),
+  ]);
+
+  const linha = $("#info-armazenamento");
+  if (!linha) return;
+
+  const tamanho = uso?.usado ? ` · ${(uso.usado / 1024 / 1024).toFixed(1).replace(".", ",")} MB usados` : "";
+
+  if (protegido === true) {
+    linha.className = "status-linha ok";
+    linha.textContent = `Armazenamento protegido: o sistema não apaga suas pescas${tamanho}`;
+  } else if (protegido === false) {
+    linha.className = "status-linha";
+    linha.textContent =
+      `Armazenamento comum${tamanho}. Instale o app na tela inicial para o ` +
+      `celular não descartar as pescas se o espaço apertar.`;
+  } else {
+    linha.className = "status-linha";
+    linha.textContent =
+      `Este navegador não informa o estado do armazenamento${tamanho}. ` +
+      `No iPhone, o app instalado na tela inicial já fica protegido.`;
+  }
 }
 
 // ---- Eventos ---------------------------------------------------------------

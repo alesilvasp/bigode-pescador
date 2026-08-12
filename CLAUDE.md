@@ -307,7 +307,16 @@ quando o registro volta do servidor.
     1º semestre continuaria mostrando 12.795 pontos para quem, na regra nova,
     fez 2.112. Quem muda regra em release tem que rodar `recalcularTodas()` na
     migração — é o que a tela de Ajustes já faz ao mexer na calibragem.
-25. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+25. **Armazenamento de site é descartável até você pedir o contrário.** O
+    navegador trata IndexedDB como "best-effort": com o celular sem espaço, o
+    sistema apaga sem avisar — e o cenário do app é justamente horas offline,
+    com foto de cada peixe e a fila esperando sinal. `protegerArmazenamento()`
+    chama `navigator.storage.persist()` no boot. O Chrome só concede para app
+    **instalado na tela inicial** (em navegador comum ele nega, e a tela de
+    Ajustes passa a pedir a instalação); o Safari do iPhone não tem a API, mas
+    lá o app instalado já escapa da limpeza de 7 dias. Nos dois casos, o que
+    protege é instalar.
+26. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.
