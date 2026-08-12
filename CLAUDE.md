@@ -316,7 +316,14 @@ quando o registro volta do servidor.
     Ajustes passa a pedir a instalação); o Safari do iPhone não tem a API, mas
     lá o app instalado já escapa da limpeza de 7 dias. Nos dois casos, o que
     protege é instalar.
-26. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
+26. **Pesca que chega do sync é RECALCULADA pela régua local.** Não se confia no
+    número que veio no registro. Motivo: durante a troca de fórmula, quem ainda
+    não atualizou o app calcula pela regra velha usando os pontos novos que já
+    estão no banco — um robalo de 1 kg viraria `300 × 1000` e contaminaria o
+    placar de todos. Recalculando na chegada, o estrago não se espalha. Peixe
+    que o aparelho não conhece mantém o número original: recalcular sem a
+    espécie na lista daria zero e apagaria a pesca do placar.
+27. **No iPhone, "Adicionar à Tela de Início" só existe no Safari.** Chrome e
     Firefox no iOS não têm a opção — é restrição do sistema. O modal detecta o
     navegador (`CriOS`/`FxiOS`/`EdgiOS` no user agent) e manda abrir no Safari;
     sem esse aviso a pessoa procura um menu que não existe e desiste.

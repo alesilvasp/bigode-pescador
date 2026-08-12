@@ -14,7 +14,12 @@ import {
   novoId,
 } from "./config.js";
 import * as db from "./db.js";
-import { calcularPontuacao, migrarPeixeDeEscala, recalcularTodas } from "./pontuacao.js";
+import {
+  calcularPontuacao,
+  conferirPescaRecebida,
+  migrarPeixeDeEscala,
+  recalcularTodas,
+} from "./pontuacao.js";
 
 // ---- Estado em memória ----------------------------------------------------
 
@@ -695,6 +700,22 @@ export async function aplicarRemoto(entidade, registro) {
   // registro que volta do banco sempre traz fotoId nulo.
   if (entidade === "pesca" && i >= 0 && lista[i].fotoId && !registro.fotoId) {
     registro = { ...registro, fotoId: lista[i].fotoId };
+  }
+
+  // Pesca que chega do servidor é RECALCULADA pela régua deste aparelho, em vez
+  // de confiar no número que veio junto.
+  //
+  // O motivo é a troca de fórmula: enquanto alguém do grupo não atualizar o
+  // app, o aparelho dele calcula pela regra velha usando os pontos novos que já
+  // estão no banco — um robalo de 1 kg viraria `300 × 1000` e o placar de todo
+  // mundo ia junto. Recalculando na chegada, o estrago não se espalha: cada
+  // aparelho mostra a conta certa, e quem registrou conserta ao atualizar.
+  //
+  // Peixe que este aparelho não conhece mantém o número original: sem a espécie
+  // na lista, recalcular daria zero e apagaria a pesca do placar.
+  if (entidade === "pesca" && !registro.removida) {
+    const correcao = conferirPescaRecebida(registro, peixePorNome(registro.tipo), estado.ajustes);
+    if (correcao) registro = { ...registro, ...correcao };
   }
 
   // Peixes padrão semeados localmente não devem perder a marca ao voltar

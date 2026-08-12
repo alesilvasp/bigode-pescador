@@ -15,6 +15,7 @@ import { AJUSTES_PADRAO, ESCALA_ANTIGA, PEIXES_PADRAO } from "../js/config.js";
 import {
   calcularPontuacao,
   campeaoDaEtapa,
+  conferirPescaRecebida,
   contarTitulos,
   etapasComResultado,
   explicarPontuacao,
@@ -230,6 +231,33 @@ describe("pontos das espécies — tabela oficial de 12/08/2026", () => {
     assert.equal(porNome.get("Badejo").tamanhoMaximo, 140);
     assert.equal(porNome.get("Carapeba").tamanhoMaximo, 50);
     assert.equal(porNome.get("Baiacu").tamanhoMaximo, 40);
+  });
+});
+
+describe("pesca que chega do sync é conferida pela régua local", () => {
+  // Cenário real da virada de fórmula: quem não atualizou o app calcula pela
+  // regra velha com os pontos novos que já estão no banco.
+  it("corrige pontuação absurda vinda de aparelho na versão antiga", () => {
+    const daRede = { tipo: "Robalo", pesoGramas: 1000, tamanho: 50, pontuacao: 315000, fator: 300 };
+    const c = conferirPescaRecebida(daRede, peixe("Robalo"));
+    assert.equal(c.pontuacao, 360); // 300 + 50 + 10
+  });
+
+  it("peixe que este aparelho não conhece mantém o número original", () => {
+    // Recalcular sem a espécie na lista daria zero e apagaria a pesca do placar.
+    const daRede = { tipo: "Dourado", pesoGramas: 1000, tamanho: 50, pontuacao: 777, fator: 9 };
+    assert.equal(conferirPescaRecebida(daRede, null), null);
+  });
+
+  it("pesca já correta não é reescrita — evita gravação à toa", () => {
+    const daRede = { tipo: "Robalo", pesoGramas: 1000, tamanho: 50, pontuacao: 360, fator: 300 };
+    assert.equal(conferirPescaRecebida(daRede, peixe("Robalo")), null);
+  });
+
+  it("respeita a calibragem deste aparelho", () => {
+    const daRede = { tipo: "Robalo", pesoGramas: 1000, tamanho: 50, pontuacao: 360, fator: 300 };
+    const c = conferirPescaRecebida(daRede, peixe("Robalo"), { ...AJUSTES_PADRAO, multiplicadorPeso: 0 });
+    assert.equal(c.pontuacao, 350); // 300 + 50 + 0
   });
 });
 

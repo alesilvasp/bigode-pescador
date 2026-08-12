@@ -225,6 +225,28 @@ export function contarTitulos(etapas, pescas, pescadores, ajustes = AJUSTES_PADR
 }
 
 /**
+ * Confere a pontuação de uma pesca que chegou do servidor, pela régua local.
+ * Devolve os campos a corrigir, ou `null` quando não há nada a mexer.
+ *
+ * Existe por causa da troca de fórmula: quem ainda não atualizou o app calcula
+ * pela regra velha usando os pontos novos que já estão no banco — um robalo de
+ * 1 kg viraria `300 × 1000`. Recalcular na chegada impede que o número errado
+ * se espalhe pelo placar do grupo.
+ *
+ * @param {object} pesca - registro como veio do servidor
+ * @param {object|null} peixe - a espécie na lista DESTE aparelho
+ */
+export function conferirPescaRecebida(pesca, peixe, ajustes = AJUSTES_PADRAO) {
+  // Sem a espécie na lista, recalcular daria zero e apagaria a pesca do placar.
+  if (!pesca || !peixe) return null;
+
+  const pontuacao = calcularPontuacao(peixe, pesca.pesoGramas, pesca.tamanho, ajustes);
+  if (pontuacao === pesca.pontuacao && peixe.fator === pesca.fator) return null;
+
+  return { pontuacao, fator: peixe.fator, modo: peixe.modo };
+}
+
+/**
  * Decide se um peixe guardado no aparelho ficou na escala de pontos ANTIGA e,
  * se sim, devolve os campos que precisam ser trocados. `null` = deixa como está.
  *
